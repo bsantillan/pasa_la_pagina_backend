@@ -3,10 +3,12 @@ package com.example.pasa_la_pagina.services;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.pasa_la_pagina.DTOs.GoogleUser;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
+import com.example.pasa_la_pagina.utils.GoogleTokenVerifier;
 import com.example.pasa_la_pagina.utils.JWTUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JWTUtil jwtUtil;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     public String register(RegisterRequest reg_rq) {
         if (usuarioRepository.existsByEmail(reg_rq.getEmail())){
@@ -44,6 +47,15 @@ public class AuthService {
         return jwtUtil.generateToken(usuario.getEmail());
     }
 
-    //to do login with google
-
+    public String loginWithGoogle(String idToken) {
+        GoogleUser googleUser = googleTokenVerifier.verify(idToken);
+        Usuario usuario = usuarioRepository.findByEmail(googleUser.getEmail())
+                .orElseGet(() -> usuarioRepository.save(Usuario.builder()
+                        .email(googleUser.getEmail())
+                        .nombre(googleUser.getFirstName())
+                        .apellido(googleUser.getLastName())
+                        .provider("google")
+                        .build()));
+        return jwtUtil.generateToken(usuario.getEmail());
+    }
 }

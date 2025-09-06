@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.pasa_la_pagina.DTOs.requests.GoogleLoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
 import com.example.pasa_la_pagina.services.AuthService;
@@ -34,6 +35,9 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("token",token));
     }
     
-    //todo endpoint for login with google
-
+    @PostMapping("/google")
+    public ResponseEntity<Map<String, String>> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
+        String token = authService.loginWithGoogle(request.getIdToken());
+        return ResponseEntity.ok(Map.of("token", token));
+    }
 }
