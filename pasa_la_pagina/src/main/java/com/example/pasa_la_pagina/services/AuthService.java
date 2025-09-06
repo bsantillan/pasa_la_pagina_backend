@@ -7,6 +7,7 @@ import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
+import com.example.pasa_la_pagina.utils.JWTUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +17,7 @@ public class AuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JWTUtil jwtUtil;
 
     public String register(RegisterRequest reg_rq) {
         if (usuarioRepository.existsByEmail(reg_rq.getEmail())){
@@ -29,7 +31,7 @@ public class AuthService {
                         .provider("local")
                         .build();
         usuarioRepository.save(usuario);
-        return "futuro jwt";
+        return jwtUtil.generateToken(usuario.getEmail());
     }
 
     public String login(LoginRequest log_rq) {
@@ -39,7 +41,7 @@ public class AuthService {
         if (!passwordEncoder.matches(log_rq.getPassword(), usuario.getPassword_hash())) {
             throw new RuntimeException("Credenciales inválidas");
         }
-        return "futuro jwt";
+        return jwtUtil.generateToken(usuario.getEmail());
     }
 
     //to do login with google
