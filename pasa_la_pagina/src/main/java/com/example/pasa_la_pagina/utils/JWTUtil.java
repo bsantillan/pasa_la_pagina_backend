@@ -1,14 +1,22 @@
 package com.example.pasa_la_pagina.utils;
 
+import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.example.pasa_la_pagina.entities.RefreshToken;
+import com.example.pasa_la_pagina.entities.Usuario;
+import com.example.pasa_la_pagina.repositories.RefreshTokenRepository;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class JWTUtil {
 
     @Value("${jwt.expiration}")
@@ -16,6 +24,11 @@ public class JWTUtil {
 
     @Value("${jwt.secret}")
     private String secret;
+
+    @Value("${refresh_token.expiration}")
+    private long expirationRefresh;
+
+    private final RefreshTokenRepository refreshTokenRepository;
 
     public String generateToken(String email){
         return Jwts.builder()
@@ -33,5 +46,27 @@ public class JWTUtil {
             .parseSignedClaims(token)
             .getPayload()
             .getSubject();
+    }
+
+    public RefreshToken createRefreshToken(Usuario usuario){
+
+        RefreshToken refreshToken = new RefreshToken();
+
+        refreshToken.setUsuario(usuario);
+        refreshToken.setToken(UUID.randomUUID().toString());
+        refreshToken.setFecha_expiracion(Instant.now().plusSeconds(expirationRefresh));
+        return refreshTokenRepository.save(refreshToken);
+    }
+
+    public boolean validateRefreshToken(String token) {
+        return refreshTokenRepository.findByToken(token)
+            .filter(rt -> rt.getFecha_expiracion().isAfter(Instant.now()))
+            .isPresent();
+    }
+
+    public Usuario getUsuarioFromToken(String token) {
+        return refreshTokenRepository.findByToken(token)
+            .map(RefreshToken::getUsuario)
+            .orElseThrow(() -> new RuntimeException("Refresh token inválido"));
     }
 }

@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.pasa_la_pagina.DTOs.requests.GoogleLoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
+import com.example.pasa_la_pagina.DTOs.response.LoginResponse;
+import com.example.pasa_la_pagina.DTOs.response.RegisterResponse;
 import com.example.pasa_la_pagina.services.AuthService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,21 +26,23 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request){
-        String token = authService.register(request);
-        return ResponseEntity.ok(Map.of("token",token));
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request){
+        return ResponseEntity.created(null)
+                            .body(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {
-
-        String token = authService.login(request);
-        return ResponseEntity.ok(Map.of("token",token));
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
     
     @PostMapping("/google")
-    public ResponseEntity<Map<String, String>> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
-        String token = authService.loginWithGoogle(request.getIdToken());
-        return ResponseEntity.ok(Map.of("token", token));
+    public ResponseEntity<LoginResponse> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(authService.loginWithGoogle(request.getIdToken()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(Map.of("accessToken", authService.refreshToken(request.get("refreshToken"))));
     }
 }
