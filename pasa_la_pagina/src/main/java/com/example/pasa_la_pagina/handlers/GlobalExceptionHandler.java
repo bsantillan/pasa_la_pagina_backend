@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
 import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
+import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -29,6 +30,15 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "timestamp", Instant.now().toString(),
                         "status", String.valueOf(HttpStatus.UNAUTHORIZED.value()),
+                        "error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> handleUsuarioNoEncontrado(UsuarioNoEncontradoException ex){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "status", String.valueOf(HttpStatus.NOT_FOUND.value()),
                         "error", ex.getMessage()));
     }
 

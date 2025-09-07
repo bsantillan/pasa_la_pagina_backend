@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.example.pasa_la_pagina.DTOs.requests.UpdateUsuarioRequest;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarUsuarioResponse;
 import com.example.pasa_la_pagina.entities.Usuario;
+import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class UsuarioService {
     }
 
     public RecuperarUsuarioResponse recuperarUsuario(Long id){
-        Usuario usuario = usuarioRepository.findById(id).orElseThrow();
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(() -> new UsuarioNoEncontradoException("Usuario con ID " + id + " no encontrado"));
         return mapToResponse(usuario);
     }
 
@@ -44,12 +45,12 @@ public class UsuarioService {
     }
 
     public RecuperarUsuarioResponse recuperarUsuarioByEmail(String email){
-        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow(()-> new UsuarioNoEncontradoException("Usuario con email " + email + " no encontrado"));
         return mapToResponse(usuario);
     }
 
-    public RecuperarUsuarioResponse actualizarUsuario(Long id, UpdateUsuarioRequest usuarioRequest){
-        Usuario usuario = usuarioRepository.findById(id).orElseThrow();
+    public RecuperarUsuarioResponse actualizarUsuario(String email, UpdateUsuarioRequest usuarioRequest){
+        Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow(()-> new UsuarioNoEncontradoException("Usuario con email " + email + " no encontrado"));
         usuario.setNombre(usuarioRequest.getNombre());
         usuario.setApellido(usuarioRequest.getApellido());
         usuarioRepository.save(usuario);

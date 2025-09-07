@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,12 +44,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.recuperarUsuarioByEmail(email));
     }
     
-    @PutMapping("update/{id}")
+    @PutMapping("/me")
     public ResponseEntity<RecuperarUsuarioResponse> actualizarUsuario(
-            @PathVariable Long id,
-            @RequestBody UpdateUsuarioRequest request) {
+            @RequestBody UpdateUsuarioRequest request,
+            Authentication authentication) {
 
-        RecuperarUsuarioResponse updated = usuarioService.actualizarUsuario(id, request);
+        RecuperarUsuarioResponse updated = usuarioService.actualizarUsuario(authentication.getName(), request);
         return ResponseEntity.ok(updated);
     }
     
