@@ -9,6 +9,8 @@ import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
 import com.example.pasa_la_pagina.DTOs.response.LoginResponse;
 import com.example.pasa_la_pagina.DTOs.response.RegisterResponse;
 import com.example.pasa_la_pagina.entities.Usuario;
+import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
+import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.utils.GoogleTokenVerifier;
 import com.example.pasa_la_pagina.utils.JWTUtil;
@@ -26,7 +28,7 @@ public class AuthService {
 
     public RegisterResponse register(RegisterRequest reg_rq) {
         if (usuarioRepository.existsByEmail(reg_rq.getEmail())){
-            throw new RuntimeException("El usuario ya existe");
+            throw new EmailEnUsoException("El email esta en uso");
         }
         Usuario usuario = Usuario.builder()
                         .email(reg_rq.getEmail())
@@ -49,10 +51,10 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest log_rq) {
         Usuario usuario = usuarioRepository.findByEmail(log_rq.getEmail())
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            .orElseThrow(() -> new CredencialesInvalidasException("Email o contraseña incorrectos"));
         
         if (!passwordEncoder.matches(log_rq.getPassword(), usuario.getPassword_hash())) {
-            throw new RuntimeException("Credenciales inválidas");
+            throw new CredencialesInvalidasException("Email o contraseña incorrectos");
         }
         LoginResponse response = new LoginResponse();
         response.setAccessToken(jwtUtil.generateToken(usuario.getEmail()));
@@ -61,24 +63,28 @@ public class AuthService {
     }
 
     public LoginResponse loginWithGoogle(String idToken) {
-        GoogleUser googleUser = googleTokenVerifier.verify(idToken);
-        Usuario usuario = usuarioRepository.findByEmail(googleUser.getEmail())
-                .orElseGet(() -> usuarioRepository.save(Usuario.builder()
-                        .email(googleUser.getEmail())
-                        .nombre(googleUser.getFirstName())
-                        .apellido(googleUser.getLastName())
-                        .provider("google")
-                        .build()));
-        LoginResponse response = new LoginResponse();
-        response.setAccessToken(jwtUtil.generateToken(usuario.getEmail()));
-        response.setRefreshToken(jwtUtil.createRefreshToken(usuario).getToken());
-        return response;
+        try {
+            GoogleUser googleUser = googleTokenVerifier.verify(idToken);
+            Usuario usuario = usuarioRepository.findByEmail(googleUser.getEmail())
+                    .orElseGet(() -> usuarioRepository.save(Usuario.builder()
+                            .email(googleUser.getEmail())
+                            .nombre(googleUser.getFirstName())
+                            .apellido(googleUser.getLastName())
+                            .provider("google")
+                            .build()));
+            LoginResponse response = new LoginResponse();
+            response.setAccessToken(jwtUtil.generateToken(usuario.getEmail()));
+            response.setRefreshToken(jwtUtil.createRefreshToken(usuario).getToken());
+            return response;
+        } catch(Exception ex){
+            throw new CredencialesInvalidasException("Token de google invalido");
+        }
     }
 
     public String refreshToken(String token){
 
         if (!jwtUtil.validateRefreshToken(token)) {
-            throw new RuntimeException("Token invalido");
+            throw new CredencialesInvalidasException("Token invalido");
         }
 
         Usuario usuario = jwtUtil.getUsuarioFromToken(token);
