@@ -2,9 +2,11 @@ package com.example.pasa_la_pagina.utils;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.example.pasa_la_pagina.entities.RefreshToken;
@@ -59,9 +61,18 @@ public class JWTUtil {
     }
 
     public boolean validateRefreshToken(String token) {
-        return refreshTokenRepository.findByToken(token)
-            .filter(rt -> rt.getFecha_expiracion().isAfter(Instant.now()))
-            .isPresent();
+        Optional<RefreshToken> optional = refreshTokenRepository.findByToken(token);
+
+        if (optional.isEmpty()) return false;
+
+        RefreshToken refreshToken = optional.get();
+
+        if (refreshToken.getFecha_expiracion().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(refreshToken); 
+            return false;
+        }
+        
+        return true;
     }
 
     public Usuario getUsuarioFromToken(String token) {
@@ -69,4 +80,14 @@ public class JWTUtil {
             .map(RefreshToken::getUsuario)
             .orElseThrow(() -> new RuntimeException("Refresh token inválido"));
     }
+
+    public void deleteRefreshToken(Usuario usuario) {
+        refreshTokenRepository.deleteByUsuario(usuario);
+    }
+
+    @Scheduled(cron = "0 0 2 * * ?") 
+    public void cleanExpiredTokens() {
+        refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+    }
+
 }

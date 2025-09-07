@@ -27,12 +27,11 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request){
-        return ResponseEntity.created(null)
-                            .body(authService.register(request));
+        return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
     
@@ -45,4 +44,15 @@ public class AuthController {
     public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
         return ResponseEntity.ok(Map.of("accessToken", authService.refreshToken(request.get("refreshToken"))));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        if (refreshToken==null || refreshToken.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Refresh token requerido"));
+        }
+        authService.logout(refreshToken);
+        return ResponseEntity.ok(Map.of("message", "Sesión cerrada correctamente"));
+    }
+    
 }

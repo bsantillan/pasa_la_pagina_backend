@@ -90,4 +90,15 @@ public class AuthService {
         Usuario usuario = jwtUtil.getUsuarioFromToken(token);
         return (jwtUtil.generateToken(usuario.getEmail()));
     }
+
+    public void logout(String refreshToken) {
+        
+        if (!jwtUtil.validateRefreshToken(refreshToken)) {
+            throw new CredencialesInvalidasException("Token inválido");
+        }
+        Usuario usuario = jwtUtil.getUsuarioFromToken(refreshToken);
+        jwtUtil.deleteRefreshToken(usuario);
+    }
+
+
 }
