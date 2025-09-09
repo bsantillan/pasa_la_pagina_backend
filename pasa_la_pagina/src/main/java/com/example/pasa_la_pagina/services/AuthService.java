@@ -11,6 +11,7 @@ import com.example.pasa_la_pagina.DTOs.response.RegisterResponse;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
 import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
+import com.example.pasa_la_pagina.repositories.RefreshTokenRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.utils.GoogleTokenVerifier;
 import com.example.pasa_la_pagina.utils.JWTUtil;
@@ -21,10 +22,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final RefreshTokenRepository refreshTokenRepository;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JWTUtil jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
+
+
 
     public RegisterResponse register(RegisterRequest reg_rq) {
         if (usuarioRepository.existsByEmail(reg_rq.getEmail())){
@@ -56,6 +60,8 @@ public class AuthService {
         if (!passwordEncoder.matches(log_rq.getPassword(), usuario.getPassword_hash())) {
             throw new CredencialesInvalidasException("Email o contraseña incorrectos");
         }
+        refreshTokenRepository.deleteByUsuario(usuario);
+
         LoginResponse response = new LoginResponse();
         response.setAccessToken(jwtUtil.generateToken(usuario.getEmail()));
         response.setRefreshToken(jwtUtil.createRefreshToken(usuario).getToken());
