@@ -17,7 +17,6 @@ public class Libro extends Material{
     @Column(name = "isbn", nullable = false, length = 20)
     private String isbn;
 
-    /* 
     @ManyToOne 
     @JoinColumn(name = "foto_id", nullable = false)
     private Foto foto;
@@ -33,5 +32,4 @@ public class Libro extends Material{
     @ManyToOne 
     @JoinColumn(name = "autor_id", nullable = false)
     private Autor autor;
-    */
 }

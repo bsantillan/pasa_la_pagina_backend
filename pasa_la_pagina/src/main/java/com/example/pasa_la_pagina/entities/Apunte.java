@@ -23,7 +23,7 @@ public class Apunte {
     @Column(name = "anio_elaboracion", nullable = false)
     private Integer anio_elaboracion;
 
-    /*
+    
     @ManyToOne
     @JoinColumn(name = "grado_id", nullable = true)
     private Grado grado;
@@ -38,6 +38,6 @@ public class Apunte {
 
     @ManyToOne
     @JoinColumn(name = "materia_id", nullable = false)
-    private Materia meteria;
-    */
+    private Materia materia;
+    
 }
