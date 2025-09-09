@@ -1,6 +1,7 @@
 package com.example.pasa_la_pagina.DTOs.requests;
 
-import com.example.pasa_la_pagina.entities.Material.TipoOferta;
+import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
+
 import lombok.Data;
 
 @Data

@@ -16,11 +16,6 @@ import java.util.stream.Collectors;
 public class MaterialService {
 
     private final MaterialRepository materialRepository;
-    private final UsuarioRepository usuarioRepository;
-    private final GradoRepository gradoRepository;
-    private final MateriaRepository materiaRepository;
-    private final CarreraRepository carreraRepository;
-    private final InstitucionRepository institucionRepository;
 
     private MaterialResponse mapToResponse(Material material) {
         MaterialResponse response = new MaterialResponse();
@@ -34,12 +29,14 @@ public class MaterialService {
         response.setLongitud(material.getLongitud());
         response.setIdioma(material.getIdioma());
         response.setPrecio(material.getPrecio());
+        /*
         response.setTipoOferta(material.getTipoOferta());
         response.setUsuarioId(material.getUsuario() != null ? material.getUsuario().getId() : null);
         response.setGradoId(material.getGrado() != null ? material.getGrado().getId() : null);
         response.setMateriaId(material.getMateria() != null ? material.getMateria().getId() : null);
         response.setCarreraId(material.getCarrera() != null ? material.getCarrera().getId() : null);
         response.setInstitucionId(material.getInstitucion() != null ? material.getInstitucion().getId() : null);
+        */
         return response;
     }
 
@@ -94,7 +91,7 @@ public class MaterialService {
         material.setIdioma(request.getIdioma());
         material.setPrecio(request.getPrecio());
         material.setTipoOferta(request.getTipoOferta());
-
+        /*
         if (request.getUsuarioId() != null) {
             material.setUsuario(usuarioRepository.findById(request.getUsuarioId()).orElse(null));
         }
@@ -110,6 +107,7 @@ public class MaterialService {
         if (request.getInstitucionId() != null) {
             material.setInstitucion(institucionRepository.findById(request.getInstitucionId()).orElse(null));
         }
+        */
     }
 
 }

@@ -1,7 +1,11 @@
 package com.example.pasa_la_pagina.entities;
 
+
+import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
+
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "material")
@@ -9,7 +13,8 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Material {
 
     @Id
@@ -35,26 +40,4 @@ public class Material {
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
-
-    @ManyToOne
-    @JoinColumn(name = "grado_id")
-    private Grado grado;
-
-    @ManyToOne
-    @JoinColumn(name = "materia_id")
-    private Materia materia;
-
-    @ManyToOne
-    @JoinColumn(name = "carrera_id")
-    private Carrera carrera;
-
-    @ManyToOne
-    @JoinColumn(name = "intitucion_id")
-    private Institucion institucion;
-
-    public enum TipoOferta {
-        Venta,
-        Intercambio,
-        Donacion
-    }
 }
