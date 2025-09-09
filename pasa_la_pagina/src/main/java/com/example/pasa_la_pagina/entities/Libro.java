@@ -14,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 @PrimaryKeyJoinColumn(name = "id") 
 public class Libro extends Material{
 
+    @Column(name = "isbn", nullable = false, length = 20)
     private String isbn;
 
     /* 
