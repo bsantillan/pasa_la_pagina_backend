@@ -6,14 +6,14 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "apunte")
+@Table(name = "Apunte")
 @Getter 
 @Setter 
 @NoArgsConstructor 
 @AllArgsConstructor 
 @SuperBuilder
 @PrimaryKeyJoinColumn(name = "id") 
-public class Apunte {
+public class Apunte extends Material{
     
     @Min(1)
     @Column(name = "cantidad_paginas", nullable = false)
