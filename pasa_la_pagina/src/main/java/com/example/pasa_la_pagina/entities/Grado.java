@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "apunte")
+@Table(name = "Grado")
 @Getter 
 @Setter 
 @NoArgsConstructor 
