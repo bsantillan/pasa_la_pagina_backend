@@ -18,16 +18,20 @@ public class Libro extends Material{
     private String isbn;
 
     /* 
-    @ManyToOne @JoinColumn(name = "foto_id")
+    @ManyToOne 
+    @JoinColumn(name = "foto_id", nullable = false)
     private Foto foto;
 
-    @ManyToOne @JoinColumn(name = "editorial_id")
+    @ManyToOne 
+    @JoinColumn(name = "editorial_id", nullable = false)
     private Editorial editorial;
 
-    @ManyToOne @JoinColumn(name = "genero_id")
+    @ManyToOne 
+    @JoinColumn(name = "genero_id", nullable = false)
     private Genero genero;
 
-    @ManyToOne @JoinColumn(name = "autor_id")
+    @ManyToOne 
+    @JoinColumn(name = "autor_id", nullable = false)
     private Autor autor;
     */
 }
