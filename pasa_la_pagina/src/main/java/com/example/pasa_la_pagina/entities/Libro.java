@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -18,8 +20,8 @@ public class Libro extends Material{
     private String isbn;
 
     @ManyToOne 
-    @JoinColumn(name = "foto_id", nullable = false)
-    private Foto foto;
+    @OneToMany(mappedBy = "libro")
+    private List<Foto> foto;
 
     @ManyToOne 
     @JoinColumn(name = "editorial_id", nullable = false)
