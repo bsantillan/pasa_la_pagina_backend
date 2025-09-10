@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
+import java.util.List;
+
 import com.example.pasa_la_pagina.entities.Enum.NivelEducativo;
 
 import jakarta.persistence.*;
@@ -23,4 +25,7 @@ public class Institucion {
     @Column(name = "nivel_educativo", nullable = false)
     @Enumerated(EnumType.STRING)
     private NivelEducativo nivel_educativo;
+
+    @OneToMany(mappedBy = "institucion")
+    private List<Seccion> secciones;
 }

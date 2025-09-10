@@ -23,19 +23,6 @@ public class Apunte extends Material{
     @Column(name = "anio_elaboracion", nullable = false)
     private Integer anio_elaboracion;
 
-    
-    @ManyToOne
-    @JoinColumn(name = "grado_id", nullable = true)
-    private Grado grado;
-
-    @ManyToOne
-    @JoinColumn(name = "carrera_id", nullable = true)
-    private Carrera carrera;
-
-    @ManyToOne
-    @JoinColumn(name = "institucion_id", nullable = false)
-    private Institucion institucion;
-
     @ManyToOne
     @JoinColumn(name = "materia_id", nullable = false)
     private Materia materia;
