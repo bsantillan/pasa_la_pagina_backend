@@ -1,11 +1,13 @@
 package com.example.pasa_la_pagina.DTOs.response;
 
+import java.util.List;
+
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
 
 import lombok.Data;
 
 @Data
-public class MaterialResponse {
+public class PublicacionLibroResponse {
     private Long id;
     private String titulo;
     private String descripcion;
@@ -17,9 +19,10 @@ public class MaterialResponse {
     private String idioma;
     private Double precio;
     private TipoOferta tipoOferta;
-    private Long usuarioId;
-    private Long gradoId;
-    private Long materiaId;
-    private Long carreraId;
-    private Long institucionId;
+    private Integer cantidad;
+    private String isbn;
+    private List<String> fotos;
+    private String editorial;
+    private String genero;
+    private String autor;
 }

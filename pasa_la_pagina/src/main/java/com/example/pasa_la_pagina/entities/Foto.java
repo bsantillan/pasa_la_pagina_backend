@@ -19,6 +19,6 @@ public class Foto {
     private String url; 
 
     @ManyToOne
-    @JoinColumn(name = "libro_id", nullable = false)
-    private Libro libro;
+    @JoinColumn(name = "material_id", nullable = false)
+    private Material material;
 }

@@ -26,5 +26,16 @@ public class Apunte extends Material{
     @ManyToOne
     @JoinColumn(name = "materia_id", nullable = false)
     private Materia materia;
-    
+
+    @ManyToOne
+    @JoinColumn(name = "institucion_id", nullable = false)
+    private Institucion institucion;
+
+    @ManyToOne
+    @JoinColumn(name = "seccion_id", nullable = false)
+    private Seccion seccion;
+
+    @ManyToOne
+    @JoinColumn(name = "carrera_id", nullable = true)
+    private Carrera carrera;
 }

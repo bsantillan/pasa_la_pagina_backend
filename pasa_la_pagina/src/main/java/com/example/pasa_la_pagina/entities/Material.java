@@ -1,7 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
 
-import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
+import java.util.List;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,29 +30,9 @@ public class Material {
     @Column(name = "nuevo", nullable = false)
     private boolean nuevo;
 
-    @Column(name = "disponible", nullable = false)
-    private boolean disponible;
-
-    @Column(name = "digital", nullable = false)
-    private boolean digital;    
-
-    @Column(name = "latitud", nullable = false, precision = 10, scale = 6)
-    private Double latitud;
-
-    @Column(name = "longitud", nullable = false, precision = 10, scale = 6)
-    private Double longitud;
-
     @Column(name = "idioma", nullable = false, length = 50)
     private String idioma;
 
-    @Column(name = "precio", nullable = true, precision = 10, scale = 2)
-    private Double precio;
-
-    @Column(name = "tipo_oferta", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private TipoOferta tipoOferta;
-
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    @OneToMany(mappedBy = "material")
+    private List<Foto> fotos;
 }

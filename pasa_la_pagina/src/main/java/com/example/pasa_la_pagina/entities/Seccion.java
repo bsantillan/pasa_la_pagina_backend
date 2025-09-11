@@ -17,16 +17,4 @@ public class Seccion {
 
     @Column(name = "nombre", nullable = false, length = 30)
     private String nombre;
-
-    @ManyToOne
-    @JoinColumn(name = "materia_id", nullable = false)
-    private Materia materia;
-
-    @ManyToOne
-    @JoinColumn(name = "institucion_id", nullable = false)
-    private Institucion institucion;
-
-    @ManyToOne
-    @JoinColumn(name = "carrera_id", nullable = true)
-    private Carrera carrera;
 }

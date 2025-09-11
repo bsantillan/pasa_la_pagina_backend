@@ -1,7 +1,5 @@
 package com.example.pasa_la_pagina.entities;
 
-import java.util.List;
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,8 +17,5 @@ public class Materia {
 
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
-
-    @OneToMany(mappedBy = "materia")
-    private List<Seccion> secciones;
 
 }
