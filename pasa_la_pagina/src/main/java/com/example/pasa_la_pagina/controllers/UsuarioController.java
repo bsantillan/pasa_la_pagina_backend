@@ -7,6 +7,7 @@ import com.example.pasa_la_pagina.DTOs.requests.UpdateUsuarioRequest;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarUsuarioResponse;
 import com.example.pasa_la_pagina.services.UsuarioService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -46,7 +47,7 @@ public class UsuarioController {
     
     @PutMapping("/me")
     public ResponseEntity<RecuperarUsuarioResponse> actualizarUsuario(
-            @RequestBody UpdateUsuarioRequest request,
+            @Valid @RequestBody UpdateUsuarioRequest request,
             Authentication authentication) {
 
         RecuperarUsuarioResponse updated = usuarioService.actualizarUsuario(authentication.getName(), request);

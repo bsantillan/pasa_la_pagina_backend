@@ -15,6 +15,7 @@ import com.example.pasa_la_pagina.repositories.RefreshTokenRepository;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -36,7 +37,7 @@ public class JWTUtil {
         return Jwts.builder()
             .subject(email)
             .issuedAt(new Date())
-            .expiration(new Date(System.currentTimeMillis() + expiration))
+            .expiration(new Date(System.currentTimeMillis() + expiration * 1000))
             .signWith(Keys.hmacShaKeyFor(secret.getBytes()), Jwts.SIG.HS256)
             .compact();  
     }
@@ -50,16 +51,18 @@ public class JWTUtil {
             .getSubject();
     }
 
+    @Transactional
     public RefreshToken createRefreshToken(Usuario usuario){
-
+        
         RefreshToken refreshToken = new RefreshToken();
 
         refreshToken.setUsuario(usuario);
         refreshToken.setToken(UUID.randomUUID().toString());
-        refreshToken.setFecha_expiracion(Instant.now().plusSeconds(expirationRefresh));
+        refreshToken.setFechaExpiracion(Instant.now().plusSeconds(expirationRefresh));
         return refreshTokenRepository.save(refreshToken);
     }
 
+    @Transactional
     public boolean validateRefreshToken(String token) {
         Optional<RefreshToken> optional = refreshTokenRepository.findByToken(token);
 
@@ -67,7 +70,7 @@ public class JWTUtil {
 
         RefreshToken refreshToken = optional.get();
 
-        if (refreshToken.getFecha_expiracion().isBefore(Instant.now())) {
+        if (refreshToken.getFechaExpiracion().isBefore(Instant.now())) {
             refreshTokenRepository.delete(refreshToken); 
             return false;
         }
@@ -81,13 +84,14 @@ public class JWTUtil {
             .orElseThrow(() -> new RuntimeException("Refresh token inválido"));
     }
 
+    @Transactional
     public void deleteRefreshToken(Usuario usuario) {
         refreshTokenRepository.deleteByUsuario(usuario);
     }
 
     @Scheduled(cron = "0 0 2 * * ?") 
     public void cleanExpiredTokens() {
-        refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+        refreshTokenRepository.deleteAllByFechaExpiracionBefore(Instant.now());
     }
 
 }

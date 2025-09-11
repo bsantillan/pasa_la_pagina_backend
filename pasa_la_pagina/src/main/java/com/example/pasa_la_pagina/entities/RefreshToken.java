@@ -23,6 +23,6 @@ public class RefreshToken {
 
 
     @Column(nullable = false)
-    private Instant fecha_expiracion;
+    private Instant fechaExpiracion;
 
 }
