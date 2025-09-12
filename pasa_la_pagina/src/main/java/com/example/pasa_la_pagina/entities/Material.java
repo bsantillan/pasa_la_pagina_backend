@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 @Inheritance(strategy = InheritanceType.JOINED)
-public class Material {
+public abstract class Material {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,6 +33,9 @@ public class Material {
     @Column(name = "idioma", nullable = false, length = 50)
     private String idioma;
 
-    @OneToMany(mappedBy = "material")
+    @Column(name = "cantidad", nullable = false)
+    private Integer cantidad;
+
+    @OneToMany(mappedBy = "material", cascade = CascadeType.PERSIST, orphanRemoval = true)
     private List<Foto> fotos;
 }

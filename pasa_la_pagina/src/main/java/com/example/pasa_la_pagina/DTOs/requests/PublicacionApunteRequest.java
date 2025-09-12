@@ -2,6 +2,7 @@ package com.example.pasa_la_pagina.DTOs.requests;
 
 import java.util.List;
 
+import com.example.pasa_la_pagina.entities.Enum.NivelEducativo;
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
 
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +12,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
-public class PublicacionLibroRequest {
+public class PublicacionApunteRequest {
     @NotBlank(message = "El titulo es obligatorio")
     private String titulo;
 
@@ -40,24 +41,35 @@ public class PublicacionLibroRequest {
     @Positive(message = "La cantidad tiene que ser mayor que 0")
     private Integer cantidad;
 
+    @NotNull(message = "El anio de elaboracion es obligatorio")
+    @Positive(message = "El anio de elaboracion tiene que ser mayor que 0")
+    private Integer anio_elaboracion;
+
     @NotNull(message = "El tipo de oferta es obligatorio")
     private TipoOferta tipo_oferta;
-
-    @NotNull(message = "El usuarioId es obligatorio")
-    private Long usuarioId;
 
     @NotEmpty(message = "Las URLs de las fotos son obligatorias")
     private List<String> fotos_url;
 
-    @NotBlank(message = "El ISBN es obligatorio")
-    private String isbn;
+    @NotNull(message = "El usuarioId es obligatorio")
+    private Long usuarioId;
+    
+    @NotNull(message = "La cantidad de paginas es obligatorio")
+    @Positive(message = "La cantidad de paginas tiene que ser mayor que 0")
+    private Integer cantidad_paginas;
 
-    @NotBlank(message = "El genero es obligatorio")
-    private String genero;
+    @NotNull(message = "La materia es obligatoria")
+    private String materia;
 
-    @NotBlank(message = "El autor es obligatorio")
-    private String autor;
+    @NotNull(message = "La institucion es obligatoria")
+    private String institucion;
 
-    @NotBlank(message = "La editorial es obligatoria")
-    private String editorial;
+    @NotNull(message = "El nivel educativo es obligatorio")
+    private NivelEducativo nivel_educativo;
+
+    @NotNull(message = "La seccion es obligatoria")
+    private String seccion;
+
+    private String carrera;
+
 }

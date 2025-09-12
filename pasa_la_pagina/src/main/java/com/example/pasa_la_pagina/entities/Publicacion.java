@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
+import java.time.LocalDateTime;
+
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
 
 import jakarta.persistence.*;
@@ -23,23 +25,23 @@ public class Publicacion {
     @Column(name = "digital", nullable = false)
     private boolean digital;    
 
-    @Column(name = "latitud", nullable = false, precision = 10, scale = 6)
+    @Column(name = "latitud", nullable = false)
     private Double latitud;
 
-    @Column(name = "longitud", nullable = false, precision = 10, scale = 6)
+    @Column(name = "longitud", nullable = false)
     private Double longitud;
 
-    @Column(name = "precio", nullable = true, precision = 10, scale = 2)
+    @Column(name = "precio", nullable = true)
     private Double precio;
 
-    @Column(name = "cantidad", nullable = false)
-    private Integer cantidad;
+    @Column(name = "fecha_creacion", nullable = false)
+    private LocalDateTime fecha_creacion;
 
     @Column(name = "tipo_oferta", nullable = false)
     @Enumerated(EnumType.STRING)
-    private TipoOferta tipoOferta;
+    private TipoOferta tipo_oferta;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name= "material_id", nullable = false)
     Material material;
 
