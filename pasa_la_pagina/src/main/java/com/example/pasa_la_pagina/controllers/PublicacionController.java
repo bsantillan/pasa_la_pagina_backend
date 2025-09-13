@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
+import com.example.pasa_la_pagina.DTOs.response.PublicacionApunteResponse;
 import com.example.pasa_la_pagina.DTOs.response.PublicacionLibroResponse;
 import com.example.pasa_la_pagina.services.PublicacionService;
 
@@ -27,7 +28,7 @@ public class PublicacionController {
     }
 
     @PostMapping("/nuevo/apunte")
-    public ResponseEntity<PublicacionLibroResponse> nuevaPublicacionApunte(@Valid @RequestBody PublicacionApunteRequest request){
+    public ResponseEntity<PublicacionApunteResponse> nuevaPublicacionApunte(@Valid @RequestBody PublicacionApunteRequest request){
         return ResponseEntity.ok(publicacionService.nuevaPublicacionApunte(request));
     }
 }

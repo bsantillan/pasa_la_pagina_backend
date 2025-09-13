@@ -22,5 +22,5 @@ public class Institucion {
 
     @Column(name = "nivel_educativo", nullable = false)
     @Enumerated(EnumType.STRING)
-    private NivelEducativo nivel_educativo;
+    private NivelEducativo nivelEducativo;
 }
