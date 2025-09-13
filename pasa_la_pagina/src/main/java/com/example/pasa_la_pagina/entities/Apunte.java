@@ -1,0 +1,41 @@
+package com.example.pasa_la_pagina.entities;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+@Entity
+@Table(name = "Apunte")
+@Getter 
+@Setter 
+@NoArgsConstructor 
+@AllArgsConstructor 
+@SuperBuilder
+@PrimaryKeyJoinColumn(name = "id") 
+public class Apunte extends Material{
+    
+    @Min(1)
+    @Column(name = "cantidad_paginas", nullable = false)
+    private Integer cantidad_paginas;
+
+    @Min(1)
+    @Column(name = "anio_elaboracion", nullable = false)
+    private Integer anio_elaboracion;
+
+    @ManyToOne
+    @JoinColumn(name = "materia_id", nullable = false)
+    private Materia materia;
+
+    @ManyToOne
+    @JoinColumn(name = "institucion_id", nullable = false)
+    private Institucion institucion;
+
+    @ManyToOne
+    @JoinColumn(name = "seccion_id", nullable = false)
+    private Seccion seccion;
+
+    @ManyToOne
+    @JoinColumn(name = "carrera_id", nullable = true)
+    private Carrera carrera;
+}
