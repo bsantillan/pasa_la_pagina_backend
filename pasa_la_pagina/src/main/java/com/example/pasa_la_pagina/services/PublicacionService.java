@@ -6,8 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
-import com.example.pasa_la_pagina.DTOs.response.PublicacionApunteResponse;
-import com.example.pasa_la_pagina.DTOs.response.PublicacionLibroResponse;
+import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.entities.Apunte;
 import com.example.pasa_la_pagina.entities.Autor;
 import com.example.pasa_la_pagina.entities.Carrera;
@@ -21,6 +20,7 @@ import com.example.pasa_la_pagina.entities.Publicacion;
 import com.example.pasa_la_pagina.entities.Seccion;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.NivelEducativo;
+import com.example.pasa_la_pagina.entities.Enum.TipoMaterial;
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
 import com.example.pasa_la_pagina.repositories.AutorRepository;
 import com.example.pasa_la_pagina.repositories.CarreraRepository;
@@ -49,17 +49,18 @@ public class PublicacionService {
     private final GeneroRepository generoRepository;
     private final AutorRepository autorRepository;
 
-    private PublicacionLibroResponse mapToResponsePublicacionLibro(Publicacion publicacion) {
-        PublicacionLibroResponse response = new PublicacionLibroResponse();
+    private RecuperarPublicacionResponse mapToResponseRecuperarPublicacion(Publicacion publicacion) {
+        RecuperarPublicacionResponse response = new RecuperarPublicacionResponse();
+        response.setId(publicacion.getId());
+        response.setLatitud(publicacion.getLatitud());
+        response.setLongitud(publicacion.getLongitud());
+        response.setPrecio(publicacion.getPrecio());
+        response.setTipo_oferta(publicacion.getTipo_oferta());
+        response.setDisponible(publicacion.isDisponible());
+        response.setDigital(publicacion.isDigital());
         if (publicacion.getMaterial() instanceof Libro libro) {
-            response.setId(publicacion.getId());
-            response.setLatitud(publicacion.getLatitud());
-            response.setLongitud(publicacion.getLongitud());
-            response.setPrecio(publicacion.getPrecio());
-            response.setTipo_oferta(publicacion.getTipo_oferta());
-            response.setDisponible(publicacion.isDisponible());
+            response.setTipo_material(TipoMaterial.Libro);
             response.setTitulo(libro.getTitulo());
-            response.setDigital(publicacion.isDigital());
             response.setDescripcion(libro.getDescripcion());
             response.setNuevo(libro.isNuevo());
             response.setIdioma(libro.getIdioma());
@@ -69,41 +70,30 @@ public class PublicacionService {
             response.setGenero(libro.getGenero().getNombre());
             response.setUrl_fotos(libro.getFotos().stream().map(Foto::getUrl).toList());
         } else {
-            throw new RuntimeException("El material no es un libro");
+            if (publicacion.getMaterial() instanceof Apunte apunte) {
+                response.setTipo_material(TipoMaterial.Apunte);
+                response.setTitulo(apunte.getTitulo());
+                response.setDescripcion(apunte.getDescripcion());
+                response.setNuevo(apunte.isNuevo());
+                response.setIdioma(apunte.getIdioma());
+                response.setCantidad(apunte.getCantidad());
+                response.setUrl_fotos(apunte.getFotos().stream().map(Foto::getUrl).toList());
+                response.setCantidad_paginas(apunte.getCantidad_paginas());
+                response.setAnio_elaboracion(apunte.getAnio_elaboracion());
+                response.setMateria(apunte.getMateria().getNombre());
+                response.setInstitucion(apunte.getInstitucion().getNombre());
+                response.setNivel_educativo(apunte.getInstitucion().getNivelEducativo());
+                response.setSeccion(apunte.getSeccion().getNombre());
+                response.setCarrera(apunte.getCarrera() != null ? apunte.getCarrera().getNombre() : null);
+
+            } else {
+                throw new RuntimeException("El material no es un libro ni un apunte");
+            }
         }
         return response;
     }
 
-    private PublicacionApunteResponse mapToResponsePublicacionApunte(Publicacion publicacion) {
-        PublicacionApunteResponse response = new PublicacionApunteResponse();
-        if (publicacion.getMaterial() instanceof Apunte apunte) {
-            response.setId(publicacion.getId());
-            response.setLatitud(publicacion.getLatitud());
-            response.setLongitud(publicacion.getLongitud());
-            response.setPrecio(publicacion.getPrecio());
-            response.setTipo_oferta(publicacion.getTipo_oferta());
-            response.setDisponible(publicacion.isDisponible());
-            response.setTitulo(apunte.getTitulo());
-            response.setDigital(publicacion.isDigital());
-            response.setDescripcion(apunte.getDescripcion());
-            response.setNuevo(apunte.isNuevo());
-            response.setIdioma(apunte.getIdioma());
-            response.setCantidad(apunte.getCantidad());
-            response.setUrl_fotos(apunte.getFotos().stream().map(Foto::getUrl).toList());
-            response.setCantidad_paginas(apunte.getCantidad_paginas());
-            response.setAnio_elaboracion(apunte.getAnio_elaboracion());
-            response.setMateria(apunte.getMateria().getNombre());
-            response.setInstitucion(apunte.getInstitucion().getNombre());
-            response.setNivel_educativo(apunte.getInstitucion().getNivelEducativo());
-            response.setSeccion(apunte.getSeccion().getNombre());
-            response.setCarrera(apunte.getCarrera() != null ? apunte.getCarrera().getNombre() : null);
-        } else {
-            throw new RuntimeException("El material no es un apunte");
-        }
-        return response;
-    }
-
-    public PublicacionLibroResponse nuevaPublicacionLibro(PublicacionLibroRequest request) {
+    public RecuperarPublicacionResponse nuevaPublicacionLibro(PublicacionLibroRequest request) {
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Editorial editorial = recuperarEditorial(request.getEditorial());
@@ -121,7 +111,8 @@ public class PublicacionService {
                 .genero(genero)
                 .autor(autor)
                 .build();
-        libro.setFotos(request.getFotos_url().stream().map(url -> Foto.builder().url(url).material(libro).build()).toList());
+        libro.setFotos(
+                request.getFotos_url().stream().map(url -> Foto.builder().url(url).material(libro).build()).toList());
 
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
@@ -136,10 +127,10 @@ public class PublicacionService {
                 .build();
 
         publicacionRepository.save(publicacion);
-        return mapToResponsePublicacionLibro(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public PublicacionApunteResponse nuevaPublicacionApunte(PublicacionApunteRequest request) {
+    public RecuperarPublicacionResponse nuevaPublicacionApunte(PublicacionApunteRequest request) {
 
         if (request.getNivel_educativo() == NivelEducativo.Superior && request.getCarrera() == null) {
             throw new IllegalArgumentException("La carrera es obligatoria si el nivel educativo es Superior");
@@ -167,8 +158,8 @@ public class PublicacionService {
                 .carrera(carrera)
                 .institucion(institucion)
                 .build();
-        apunte.setFotos(request.getFotos_url().stream().map(url -> Foto.builder().url(url).material(apunte).build()).toList());
-
+        apunte.setFotos(
+                request.getFotos_url().stream().map(url -> Foto.builder().url(url).material(apunte).build()).toList());
 
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
@@ -183,7 +174,7 @@ public class PublicacionService {
                 .build();
 
         publicacionRepository.save(publicacion);
-        return mapToResponsePublicacionApunte(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion);
     }
 
     public Double calcularPrecio(TipoOferta tipo_oferta, Double precio) {
