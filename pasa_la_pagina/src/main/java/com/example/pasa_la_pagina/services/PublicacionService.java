@@ -58,6 +58,7 @@ public class PublicacionService {
         response.setTipo_oferta(publicacion.getTipo_oferta());
         response.setDisponible(publicacion.isDisponible());
         response.setDigital(publicacion.isDigital());
+        response.setUsuario_id(publicacion.getUsuario().getId());
         if (publicacion.getMaterial() instanceof Libro libro) {
             response.setTipo_material(TipoMaterial.Libro);
             response.setTitulo(libro.getTitulo());

@@ -23,6 +23,7 @@ public class RecuperarPublicacionResponse {
     private Integer cantidad;
     private TipoOferta tipo_oferta;
     private List<String> url_fotos;
+    private Long usuario_id;
 
     private TipoMaterial tipo_material;
 
