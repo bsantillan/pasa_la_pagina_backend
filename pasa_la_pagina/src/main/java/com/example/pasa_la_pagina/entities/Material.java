@@ -39,6 +39,6 @@ public abstract class Material {
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
-    @OneToMany(mappedBy = "material", cascade = CascadeType.PERSIST, orphanRemoval = true)
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Foto> fotos;
 }

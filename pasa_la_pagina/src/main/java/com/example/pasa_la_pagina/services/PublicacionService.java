@@ -1,11 +1,13 @@
 package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
+import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.entities.Apunte;
 import com.example.pasa_la_pagina.entities.Autor;
@@ -66,6 +68,7 @@ public class PublicacionService {
             response.setNuevo(libro.getNuevo());
             response.setIdioma(libro.getIdioma());
             response.setCantidad(libro.getCantidad());
+            response.setIsbn(libro.getIsbn());
             response.setEditorial(libro.getEditorial().getNombre());
             response.setAutor(libro.getAutor().getNombre());
             response.setGenero(libro.getGenero().getNombre());
@@ -176,6 +179,84 @@ public class PublicacionService {
                 .build();
 
         publicacionRepository.save(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion);
+    }
+
+    public RecuperarPublicacionResponse actualizarPublicacion(UpdatePublicacionRequest request){
+        Publicacion publicacion = publicacionRepository.findById(request.getId())
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+request.getId()));
+        if (publicacion.getUsuario().getId()!=request.getUsuarioId()) {
+            throw new IllegalArgumentException("La publicacion no es del usuario con id: "+request.getUsuarioId());
+        }
+        if (request.getTipo_material()==TipoMaterial.Apunte && request.getNivel_educativo()!=NivelEducativo.Superior && request.getCarrera()==null) {
+            throw new IllegalArgumentException("La carrera es obligatoria si el nivel educativo es Superior");
+        }
+        if (request.getUrl_fotos()==null || request.getUrl_fotos().isEmpty()) {
+            throw new IllegalArgumentException("Debe haber alguna imagen en la publicacion");
+        }
+
+        if (request.getLatitud() != null) publicacion.setLatitud(request.getLatitud());
+        if (request.getLongitud() != null) publicacion.setLongitud(request.getLongitud());
+        if (request.getTipo_oferta() != null) publicacion.setTipo_oferta(request.getTipo_oferta());
+        if (request.getPrecio() != null) publicacion.setPrecio(calcularPrecio(publicacion.getTipo_oferta(), request.getPrecio()));
+        if(request.getTitulo() != null) publicacion.getMaterial().setTitulo(request.getTitulo());
+        if(request.getDescripcion() != null) publicacion.getMaterial().setDescripcion(request.getDescripcion());
+        if(request.getNuevo() != null) publicacion.getMaterial().setNuevo(request.getNuevo());
+        if(request.getDigital() != null) publicacion.getMaterial().setDigital(request.getDigital());
+        if(request.getIdioma() != null) publicacion.getMaterial().setIdioma(request.getIdioma());
+        if(request.getCantidad() != null) publicacion.getMaterial().setCantidad(request.getCantidad());
+        if(request.getUrl_fotos() != null){
+            List<Foto> fotosActuales = publicacion.getMaterial().getFotos();
+
+            fotosActuales.removeIf(foto -> request.getUrl_fotos()
+                    .stream()
+                    .noneMatch(url -> url.trim().equalsIgnoreCase(foto.getUrl().trim()))
+            );
+
+            // Obtener las URLs que ya existen
+            List<String> urlsExistentes = fotosActuales.stream()
+                    .map(Foto::getUrl)
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .toList();
+
+            // Agregar fotos nuevas
+            List<Foto> nuevasFotos = request.getUrl_fotos().stream()
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .filter(url -> !urlsExistentes.contains(url))
+                    .map(url -> Foto.builder()
+                            .url(url)
+                            .material(publicacion.getMaterial())
+                            .build())
+                    .toList();
+            publicacion.getMaterial().getFotos().addAll(nuevasFotos);
+        }
+
+
+        if (publicacion.getMaterial() instanceof Libro libro) {
+            if(request.getIsbn() != null) libro.setIsbn(request.getIsbn());
+            if(request.getEditorial() != null) libro.setEditorial(recuperarEditorial(request.getEditorial()));
+            if(request.getGenero() != null) libro.setGenero(recuperarGenero(request.getGenero()));
+            if(request.getAutor() != null) libro.setAutor(recuperarAutor(request.getAutor()));
+        }
+
+        if (publicacion.getMaterial() instanceof Apunte apunte) {
+            if(request.getCantidad_paginas() != null) apunte.setCantidad_paginas(request.getCantidad_paginas());
+            if(request.getAnio_elaboracion() != null) apunte.setAnio_elaboracion(request.getAnio_elaboracion());
+            if(request.getMateria() != null) apunte.setMateria(recuperarMateria(request.getMateria()));
+            if(request.getInstitucion() != null) apunte.setInstitucion(recuperarInstitucion(request.getInstitucion(),request.getNivel_educativo() != null ? request.getNivel_educativo() : apunte.getInstitucion().getNivelEducativo()));
+            if(request.getSeccion() != null) apunte.setSeccion(recuperarSeccion(request.getSeccion()));
+            if (request.getNivel_educativo()!=NivelEducativo.Superior) {
+                apunte.setCarrera(null);
+            }
+            if (request.getCarrera()!=null && apunte.getInstitucion().getNivelEducativo()==NivelEducativo.Superior) {
+                apunte.setCarrera(recuperarCarrera(request.getCarrera()));
+            }
+        }
+
+        publicacionRepository.save(publicacion);
+
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
