@@ -13,9 +13,9 @@ public class RecuperarPublicacionResponse {
     private Long id;
     private String titulo;
     private String descripcion;
-    private boolean nuevo;
-    private boolean disponible;
-    private boolean digital;
+    private Boolean nuevo;
+    private Boolean disponible;
+    private Boolean digital;
     private Double latitud;
     private Double longitud;
     private String idioma;

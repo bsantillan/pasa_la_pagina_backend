@@ -56,14 +56,14 @@ public class PublicacionService {
         response.setLongitud(publicacion.getLongitud());
         response.setPrecio(publicacion.getPrecio());
         response.setTipo_oferta(publicacion.getTipo_oferta());
-        response.setDisponible(publicacion.isDisponible());
-        response.setDigital(publicacion.isDigital());
+        response.setDisponible(publicacion.getDisponible());
         response.setUsuario_id(publicacion.getUsuario().getId());
         if (publicacion.getMaterial() instanceof Libro libro) {
             response.setTipo_material(TipoMaterial.Libro);
             response.setTitulo(libro.getTitulo());
             response.setDescripcion(libro.getDescripcion());
-            response.setNuevo(libro.isNuevo());
+            response.setDigital(libro.getDigital());
+            response.setNuevo(libro.getNuevo());
             response.setIdioma(libro.getIdioma());
             response.setCantidad(libro.getCantidad());
             response.setEditorial(libro.getEditorial().getNombre());
@@ -75,7 +75,8 @@ public class PublicacionService {
                 response.setTipo_material(TipoMaterial.Apunte);
                 response.setTitulo(apunte.getTitulo());
                 response.setDescripcion(apunte.getDescripcion());
-                response.setNuevo(apunte.isNuevo());
+                response.setDigital(apunte.getDigital());
+                response.setNuevo(apunte.getNuevo());
                 response.setIdioma(apunte.getIdioma());
                 response.setCantidad(apunte.getCantidad());
                 response.setUrl_fotos(apunte.getFotos().stream().map(Foto::getUrl).toList());
@@ -104,7 +105,8 @@ public class PublicacionService {
         Libro libro = Libro.builder()
                 .titulo(request.getTitulo())
                 .descripcion(request.getDescripcion())
-                .nuevo(request.isNuevo())
+                .digital(request.getDigital())
+                .nuevo(request.getNuevo())
                 .idioma(request.getIdioma())
                 .isbn(request.getIsbn())
                 .cantidad(request.getCantidad())
@@ -118,7 +120,6 @@ public class PublicacionService {
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
                 .precio(calcularPrecio(request.getTipo_oferta(), request.getPrecio()))
-                .digital(request.isDigital())
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .tipo_oferta(request.getTipo_oferta())
@@ -149,7 +150,8 @@ public class PublicacionService {
         Apunte apunte = Apunte.builder()
                 .titulo(request.getTitulo())
                 .descripcion(request.getDescripcion())
-                .nuevo(request.isNuevo())
+                .digital(request.getDigital())
+                .nuevo(request.getNuevo())
                 .idioma(request.getIdioma())
                 .cantidad(request.getCantidad())
                 .anio_elaboracion(request.getAnio_elaboracion())
@@ -165,7 +167,6 @@ public class PublicacionService {
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
                 .precio(calcularPrecio(request.getTipo_oferta(), request.getPrecio()))
-                .digital(request.isDigital())
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .tipo_oferta(request.getTipo_oferta())

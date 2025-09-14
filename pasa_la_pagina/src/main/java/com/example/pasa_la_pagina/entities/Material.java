@@ -28,7 +28,10 @@ public abstract class Material {
     private String descripcion;
 
     @Column(name = "nuevo", nullable = false)
-    private boolean nuevo;
+    private Boolean nuevo;
+
+    @Column(name = "digital", nullable = false)
+    private Boolean digital; 
 
     @Column(name = "idioma", nullable = false, length = 50)
     private String idioma;

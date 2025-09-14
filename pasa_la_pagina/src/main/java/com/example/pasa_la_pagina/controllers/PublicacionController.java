@@ -30,4 +30,6 @@ public class PublicacionController {
     public ResponseEntity<RecuperarPublicacionResponse> nuevaPublicacionApunte(@Valid @RequestBody PublicacionApunteRequest request){
         return ResponseEntity.ok(publicacionService.nuevaPublicacionApunte(request));
     }
+
+
 }
