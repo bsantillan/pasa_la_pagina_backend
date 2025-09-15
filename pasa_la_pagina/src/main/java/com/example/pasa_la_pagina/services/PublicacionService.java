@@ -4,12 +4,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.requests.BuscarPublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.entities.Apunte;
 import com.example.pasa_la_pagina.entities.Autor;
@@ -265,7 +268,7 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public List<RecuperarPublicacionResponse> recuperarPublicaciones(BuscarPublicacionRequest request) {
+    public List<RecuperarPublicacionResponse> buscarPublicaciones(BuscarPublicacionRequest request) {
         if (request == null) return publicacionRepository.findAll().stream()
                     .map(this::mapToResponseRecuperarPublicacion) 
                     .toList();
@@ -321,6 +324,31 @@ public class PublicacionService {
                 }
                 return response;
             }
+    }
+
+    public PageRecuperarPublicacionResponse recuperarPublicaciones(Pageable pageable) {
+        Page<RecuperarPublicacionResponse> publicaciones  = publicacionRepository.findAll(pageable)
+                .map(this::mapToResponseRecuperarPublicacion);
+        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        response.setContent(publicaciones.getContent());
+        response.setSize(publicaciones.getSize());
+        response.setTotalElements(publicaciones.getTotalElements());
+        response.setTotalPages(publicaciones.getTotalPages());
+
+        return response;
+    }
+
+    public RecuperarPublicacionResponse recuperarPublicacionById(Long id) {
+        Publicacion publicacion = publicacionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+id));
+        return mapToResponseRecuperarPublicacion(publicacion);
+    }
+
+    public List<RecuperarPublicacionResponse> recuperarPublicacionesByUserId(Long usuario_id) {
+        return publicacionRepository.findByUsuarioId(usuario_id)
+                .stream()
+                .map(this::mapToResponseRecuperarPublicacion) 
+                .toList();
     }
 
     public Double calcularPrecio(TipoOferta tipo_oferta, Double precio) {

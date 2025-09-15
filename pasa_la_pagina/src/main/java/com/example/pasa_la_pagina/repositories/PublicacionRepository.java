@@ -79,4 +79,6 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
         @Param("precioMaximo") Double precioMaximo
     );
 
+    List<Publicacion> findByUsuarioId(Long usuarioId);
+
 }
