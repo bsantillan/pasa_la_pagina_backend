@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.controllers;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -7,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.pasa_la_pagina.DTOs.requests.BuscarPublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
@@ -36,5 +39,10 @@ public class PublicacionController {
     @PutMapping("/actualizar")
     public ResponseEntity<RecuperarPublicacionResponse> actualizarPublicacion(@Valid @RequestBody UpdatePublicacionRequest request){
         return ResponseEntity.ok(publicacionService.actualizarPublicacion(request));
+    }
+
+    @PostMapping("/buscar")
+    public ResponseEntity<List<RecuperarPublicacionResponse>> recuperarPublicaciones(@Valid @RequestBody(required = false) BuscarPublicacionRequest request) {
+        return ResponseEntity.ok(publicacionService.recuperarPublicaciones(request));
     }
 }

@@ -3,6 +3,8 @@ package com.example.pasa_la_pagina.entities;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -40,5 +42,6 @@ public abstract class Material {
     private Integer cantidad;
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Foto> fotos;
 }

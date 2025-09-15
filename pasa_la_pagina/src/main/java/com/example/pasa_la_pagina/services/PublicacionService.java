@@ -1,10 +1,12 @@
 package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.pasa_la_pagina.DTOs.requests.BuscarPublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
@@ -38,6 +40,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PublicacionService {
 
@@ -60,6 +63,8 @@ public class PublicacionService {
         response.setTipo_oferta(publicacion.getTipo_oferta());
         response.setDisponible(publicacion.getDisponible());
         response.setUsuario_id(publicacion.getUsuario().getId());
+        response.setUsuario_nombre(publicacion.getUsuario().getNombre());
+        response.setUsuario_apellido(publicacion.getUsuario().getApellido());
         if (publicacion.getMaterial() instanceof Libro libro) {
             response.setTipo_material(TipoMaterial.Libro);
             response.setTitulo(libro.getTitulo());
@@ -260,6 +265,64 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
+    public List<RecuperarPublicacionResponse> recuperarPublicaciones(BuscarPublicacionRequest request) {
+        if (request == null) return publicacionRepository.findAll().stream()
+                    .map(this::mapToResponseRecuperarPublicacion) 
+                    .toList();
+        if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null) && request.getTipos_oferta() == null) {
+            throw new IllegalArgumentException("Si se especifica un precio mínimo o maximo, debe incluirse el tipo de oferta 'Venta'");
+        }
+        if (request.getPrecio_minimo() != null && !request.getTipos_oferta().contains(TipoOferta.Venta)) {
+            throw new IllegalArgumentException("Si se especifica un precio minimo, debe incluirse el tipo de oferta 'Venta'");
+        }
+        if (request.getPrecio_maximo() != null && !request.getTipos_oferta().contains(TipoOferta.Venta)) {
+            throw new IllegalArgumentException("Si se especifica un precio maximo, debe incluirse el tipo de oferta 'Venta'");
+        }
+            List<RecuperarPublicacionResponse> response = new ArrayList<>();
+            List<String> idiomas = (request.getIdiomas() == null || request.getIdiomas().isEmpty()) ? null : request.getIdiomas();
+            List<TipoOferta> tipos_ofertas = (request.getTipos_oferta() == null || request.getTipos_oferta().isEmpty()) ? null : request.getTipos_oferta();
+            String query = request.getQuery();
+            Boolean nuevo = request.getNuevo();
+            Boolean digital = request.getDigital();
+            Double precio_minimo = request.getPrecio_minimo();
+            Double precio_maximo = request.getPrecio_maximo();
+            if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
+                response.addAll(publicacionRepository.buscarPorLibro
+                        (query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
+                        .stream()
+                        .map(this::mapToResponseRecuperarPublicacion) 
+                        .toList()
+                );
+                List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
+                response.addAll(publicacionRepository.buscarPorApunte
+                        (query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
+                        .stream()
+                        .map(this::mapToResponseRecuperarPublicacion) 
+                        .toList()
+                );
+                return response;
+            } else {
+                if (request.getTipos_material().contains(TipoMaterial.Libro)) {
+                    response.addAll(publicacionRepository.buscarPorLibro
+                            (query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
+                            .stream()
+                            .map(this::mapToResponseRecuperarPublicacion) 
+                            .toList()
+                    );
+                }
+                if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
+                    List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
+                    response.addAll(publicacionRepository.buscarPorApunte
+                            (query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
+                            .stream()
+                            .map(this::mapToResponseRecuperarPublicacion) 
+                            .toList()
+                    );
+                }
+                return response;
+            }
+    }
+
     public Double calcularPrecio(TipoOferta tipo_oferta, Double precio) {
         switch (tipo_oferta) {
             case TipoOferta.Venta:
@@ -269,12 +332,12 @@ public class PublicacionService {
         }
     }
 
-    @Transactional
     public Editorial recuperarEditorial(String editorial) {
         return editorialRepository.findByNombre(editorial)
                 .orElseGet(() -> editorialRepository.save(Editorial.builder().nombre(editorial).build()));
     }
 
+    
     public Genero recuperarGenero(String genero) {
         return generoRepository.findByNombre(genero)
                 .orElseGet(() -> generoRepository.save(Genero.builder().nombre(genero).build()));

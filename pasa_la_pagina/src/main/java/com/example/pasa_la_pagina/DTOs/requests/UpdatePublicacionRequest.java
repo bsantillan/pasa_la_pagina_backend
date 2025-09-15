@@ -16,7 +16,7 @@ public class UpdatePublicacionRequest {
     private String titulo;
     private String descripcion;
     private Boolean nuevo;
-    private Boolean disponible;
+    private Boolean disponible; 
     private Boolean digital;
     private Double latitud;
     private Double longitud;
