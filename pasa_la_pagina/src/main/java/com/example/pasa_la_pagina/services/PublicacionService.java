@@ -22,6 +22,7 @@ import com.example.pasa_la_pagina.entities.Carrera;
 import com.example.pasa_la_pagina.entities.Editorial;
 import com.example.pasa_la_pagina.entities.Foto;
 import com.example.pasa_la_pagina.entities.Genero;
+import com.example.pasa_la_pagina.entities.Idioma;
 import com.example.pasa_la_pagina.entities.Institucion;
 import com.example.pasa_la_pagina.entities.Libro;
 import com.example.pasa_la_pagina.entities.Materia;
@@ -35,6 +36,7 @@ import com.example.pasa_la_pagina.repositories.AutorRepository;
 import com.example.pasa_la_pagina.repositories.CarreraRepository;
 import com.example.pasa_la_pagina.repositories.EditorialRepository;
 import com.example.pasa_la_pagina.repositories.GeneroRepository;
+import com.example.pasa_la_pagina.repositories.IdiomaRepository;
 import com.example.pasa_la_pagina.repositories.InstitucionRepository;
 import com.example.pasa_la_pagina.repositories.MateriaRepository;
 import com.example.pasa_la_pagina.repositories.PublicacionRepository;
@@ -58,6 +60,8 @@ public class PublicacionService {
     private final CarreraRepository carreraRepository;
     private final GeneroRepository generoRepository;
     private final AutorRepository autorRepository;
+    private final IdiomaRepository idiomaRepository;
+
 
     private RecuperarPublicacionResponse mapToResponseRecuperarPublicacion(Publicacion publicacion) {
         RecuperarPublicacionResponse response = new RecuperarPublicacionResponse();
@@ -76,7 +80,7 @@ public class PublicacionService {
             response.setDescripcion(libro.getDescripcion());
             response.setDigital(libro.getDigital());
             response.setNuevo(libro.getNuevo());
-            response.setIdioma(libro.getIdioma());
+            response.setIdioma(libro.getIdioma().getNombre());
             response.setCantidad(libro.getCantidad());
             response.setIsbn(libro.getIsbn());
             response.setEditorial(libro.getEditorial().getNombre());
@@ -90,7 +94,7 @@ public class PublicacionService {
                 response.setDescripcion(apunte.getDescripcion());
                 response.setDigital(apunte.getDigital());
                 response.setNuevo(apunte.getNuevo());
-                response.setIdioma(apunte.getIdioma());
+                response.setIdioma(apunte.getIdioma().getNombre());
                 response.setCantidad(apunte.getCantidad());
                 response.setUrl_fotos(apunte.getFotos().stream().map(Foto::getUrl).toList());
                 response.setCantidad_paginas(apunte.getCantidad_paginas());
@@ -124,7 +128,7 @@ public class PublicacionService {
         if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
             throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
         }
-
+        Idioma idioma = recuperarIdioma(request.getIdioma());
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Editorial editorial = recuperarEditorial(request.getEditorial());
         Genero genero = recuperarGenero(request.getGenero());
@@ -135,7 +139,7 @@ public class PublicacionService {
                 .descripcion(request.getDescripcion())
                 .digital(request.getDigital())
                 .nuevo(request.getNuevo())
-                .idioma(request.getIdioma())
+                .idioma(idioma)
                 .isbn(request.getIsbn())
                 .cantidad(request.getCantidad())
                 .editorial(editorial)
@@ -171,6 +175,7 @@ public class PublicacionService {
         if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
             throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
         }
+        Idioma idioma = recuperarIdioma(request.getIdioma());
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Institucion institucion = recuperarInstitucion(request.getInstitucion(), request.getNivel_educativo());
         Seccion seccion = recuperarSeccion(request.getSeccion());
@@ -185,7 +190,7 @@ public class PublicacionService {
                 .descripcion(request.getDescripcion())
                 .digital(request.getDigital())
                 .nuevo(request.getNuevo())
-                .idioma(request.getIdioma())
+                .idioma(idioma)
                 .cantidad(request.getCantidad())
                 .anio_elaboracion(request.getAnio_elaboracion())
                 .cantidad_paginas(request.getCantidad_paginas())
@@ -239,7 +244,7 @@ public class PublicacionService {
         if(request.getDescripcion() != null) publicacion.getMaterial().setDescripcion(request.getDescripcion());
         if(request.getNuevo() != null) publicacion.getMaterial().setNuevo(request.getNuevo());
         if(request.getDigital() != null) publicacion.getMaterial().setDigital(request.getDigital());
-        if(request.getIdioma() != null) publicacion.getMaterial().setIdioma(request.getIdioma());
+        if(request.getIdioma() != null) publicacion.getMaterial().setIdioma(recuperarIdioma(request.getIdioma()));
         if(request.getCantidad() != null) publicacion.getMaterial().setCantidad(request.getCantidad());
         if(request.getUrl_fotos() != null){
             List<Foto> fotosActuales = publicacion.getMaterial().getFotos();
@@ -414,5 +419,10 @@ public class PublicacionService {
     public Carrera recuperarCarrera(String carrera) {
         return carreraRepository.findByNombre(carrera)
                 .orElseGet(() -> carreraRepository.save(Carrera.builder().nombre(carrera).build()));
+    }
+
+    public Idioma recuperarIdioma(String idioma) {
+        return idiomaRepository.findByNombre(idioma).
+        orElseThrow(() -> new IllegalArgumentException("No se encontro el idioma con nombre: "+idioma));
     }
 }

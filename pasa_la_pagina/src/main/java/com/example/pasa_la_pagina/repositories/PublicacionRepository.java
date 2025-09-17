@@ -17,26 +17,27 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
 
         @Query("SELECT DISTINCT p FROM Publicacion p " +
                         "JOIN FETCH p.material m " +
+                        "LEFT JOIN m.idioma i " + // correcto
                         "LEFT JOIN FETCH m.fotos f " +
                         "LEFT JOIN Libro l ON m.id = l.id " +
                         "LEFT JOIN l.genero g " +
                         "LEFT JOIN l.autor a " +
                         "LEFT JOIN l.editorial e " +
-                        "WHERE TYPE(m) = Libro " + // <-- filtra solo libros
+                        "WHERE TYPE(m) = Libro " +
                         "AND (:query IS NULL OR " +
-                        "   LOWER(m.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(m.descripcion) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(g.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(e.nombre) LIKE LOWER(CONCAT('%', :query, '%'))" +
+                        "     LOWER(m.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(m.descripcion) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(g.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(a.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(e.nombre) LIKE LOWER(CONCAT('%', :query, '%'))" +
                         ") " +
                         "AND (:nuevo IS NULL OR m.nuevo = :nuevo) " +
                         "AND (:digital IS NULL OR m.digital = :digital) " +
-                        "AND (:idiomas IS NULL OR m.idioma IN :idiomas) " +
+                        "AND (:idiomas IS NULL OR i.nombre IN :idiomas) " +
                         "AND (:tiposOfertas IS NULL OR p.tipo_oferta IN :tiposOfertas) " +
                         "AND (:precioMinimo IS NULL OR p.precio >= :precioMinimo) " +
-                        "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo)" +
+                        "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo) " +
                         "AND p.disponible = true")
         List<Publicacion> buscarPorLibroDisponibles(
                         @Param("query") String query,
@@ -51,26 +52,27 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "JOIN FETCH p.material m " +
                         "LEFT JOIN FETCH m.fotos f " +
                         "LEFT JOIN Apunte a ON m.id = a.id " +
+                        "LEFT JOIN m.idioma i " + // <-- corregido
                         "LEFT JOIN a.materia mat " +
                         "LEFT JOIN a.institucion inst " +
                         "LEFT JOIN a.seccion sec " +
                         "LEFT JOIN a.carrera car " +
-                        "WHERE TYPE(m) = Apunte " + // <-- filtra solo apuntes
+                        "WHERE TYPE(m) = Apunte " +
                         "AND (:query IS NULL OR " +
-                        "   LOWER(m.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(m.descripcion) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(mat.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(inst.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(sec.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
-                        "   OR LOWER(car.nombre) LIKE LOWER(CONCAT('%', :query, '%'))" +
+                        "     LOWER(m.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(m.descripcion) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(mat.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(inst.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(sec.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+                        "  OR LOWER(car.nombre) LIKE LOWER(CONCAT('%', :query, '%'))" +
                         ") " +
                         "AND (:nivelesEducativos IS NULL OR inst.nivelEducativo IN :nivelesEducativos) " +
                         "AND (:nuevo IS NULL OR m.nuevo = :nuevo) " +
                         "AND (:digital IS NULL OR m.digital = :digital) " +
-                        "AND (:idiomas IS NULL OR m.idioma IN :idiomas) " +
+                        "AND (:idiomas IS NULL OR i.nombre IN :idiomas) " + // funciona ahora
                         "AND (:tiposOfertas IS NULL OR p.tipo_oferta IN :tiposOfertas) " +
                         "AND (:precioMinimo IS NULL OR p.precio >= :precioMinimo) " +
-                        "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo)" +
+                        "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo) " +
                         "AND p.disponible = true")
         List<Publicacion> buscarPorApunteDisponibles(
                         @Param("query") String query,
@@ -91,7 +93,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
         Page<Publicacion> findAllDisponibles(Pageable pageable);
 
         @Query("SELECT p FROM Publicacion p " +
-                        "WHERE p.disponible = true "+
+                        "WHERE p.disponible = true " +
                         "AND p.id = :id")
         Optional<Publicacion> findDisponibleById(Long id);
 

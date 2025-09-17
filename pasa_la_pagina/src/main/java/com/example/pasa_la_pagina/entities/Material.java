@@ -35,8 +35,9 @@ public abstract class Material {
     @Column(name = "digital", nullable = false)
     private Boolean digital; 
 
-    @Column(name = "idioma", nullable = false, length = 50)
-    private String idioma;
+    @ManyToOne
+    @JoinColumn(name = "idioma_id", nullable = false)
+    private Idioma idioma;
 
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
