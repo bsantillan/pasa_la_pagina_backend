@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.requests.BuscarPublicacionRequest;
+import com.example.pasa_la_pagina.DTOs.requests.DeletePublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
@@ -106,7 +108,22 @@ public class PublicacionService {
         return response;
     }
 
+    private PageRecuperarPublicacionResponse mapToResponsePageRecuperarPublicacion(Page<RecuperarPublicacionResponse> page_publicaciones) {
+        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        response.setContent(page_publicaciones.getContent());
+        response.setSize(page_publicaciones.getSize());
+        response.setTotalElements(page_publicaciones.getTotalElements());
+        response.setTotalPages(page_publicaciones.getTotalPages());
+        return response;
+    }
+
     public RecuperarPublicacionResponse nuevaPublicacionLibro(PublicacionLibroRequest request) {
+        if (request.getTipo_oferta() != TipoOferta.Venta && request.getPrecio() != null) {
+            throw new IllegalArgumentException("El precio solo puede ser especificado si el tipo de oferta es 'Venta'");
+        }
+        if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
+            throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
+        }
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Editorial editorial = recuperarEditorial(request.getEditorial());
@@ -130,7 +147,7 @@ public class PublicacionService {
 
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
-                .precio(calcularPrecio(request.getTipo_oferta(), request.getPrecio()))
+                .precio(request.getPrecio())
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .tipo_oferta(request.getTipo_oferta())
@@ -148,11 +165,16 @@ public class PublicacionService {
         if (request.getNivel_educativo() == NivelEducativo.Superior && request.getCarrera() == null) {
             throw new IllegalArgumentException("La carrera es obligatoria si el nivel educativo es Superior");
         }
+        if (request.getTipo_oferta() != TipoOferta.Venta && request.getPrecio() != null) {
+            throw new IllegalArgumentException("El precio solo puede ser especificado si el tipo de oferta es 'Venta'");
+        }
+        if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
+            throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
+        }
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Institucion institucion = recuperarInstitucion(request.getInstitucion(), request.getNivel_educativo());
         Seccion seccion = recuperarSeccion(request.getSeccion());
         Materia materia = recuperarMateria(request.getMateria());
-        ;
         Carrera carrera = null;
         if (request.getNivel_educativo() == NivelEducativo.Superior) {
             carrera = recuperarCarrera(request.getCarrera());
@@ -177,7 +199,7 @@ public class PublicacionService {
 
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
-                .precio(calcularPrecio(request.getTipo_oferta(), request.getPrecio()))
+                .precio(request.getPrecio())
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .tipo_oferta(request.getTipo_oferta())
@@ -202,11 +224,17 @@ public class PublicacionService {
         if (request.getUrl_fotos()==null || request.getUrl_fotos().isEmpty()) {
             throw new IllegalArgumentException("Debe haber alguna imagen en la publicacion");
         }
+        if (request.getTipo_oferta() != TipoOferta.Venta && request.getPrecio() != null) {
+            throw new IllegalArgumentException("El precio solo puede ser especificado si el tipo de oferta es 'Venta'");
+        }
+        if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
+            throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
+        }
 
         if (request.getLatitud() != null) publicacion.setLatitud(request.getLatitud());
         if (request.getLongitud() != null) publicacion.setLongitud(request.getLongitud());
         if (request.getTipo_oferta() != null) publicacion.setTipo_oferta(request.getTipo_oferta());
-        if (request.getPrecio() != null) publicacion.setPrecio(calcularPrecio(publicacion.getTipo_oferta(), request.getPrecio()));
+        if (request.getPrecio() != null) publicacion.setPrecio(request.getPrecio());
         if(request.getTitulo() != null) publicacion.getMaterial().setTitulo(request.getTitulo());
         if(request.getDescripcion() != null) publicacion.getMaterial().setDescripcion(request.getDescripcion());
         if(request.getNuevo() != null) publicacion.getMaterial().setNuevo(request.getNuevo());
@@ -268,10 +296,9 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public List<RecuperarPublicacionResponse> buscarPublicaciones(BuscarPublicacionRequest request) {
-        if (request == null) return publicacionRepository.findAll().stream()
-                    .map(this::mapToResponseRecuperarPublicacion) 
-                    .toList();
+    public PageRecuperarPublicacionResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable) {
+        if (request == null) return mapToResponsePageRecuperarPublicacion(publicacionRepository.findAllDisponibles(pageable).map(this::mapToResponseRecuperarPublicacion));
+            
         if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null) && request.getTipos_oferta() == null) {
             throw new IllegalArgumentException("Si se especifica un precio mínimo o maximo, debe incluirse el tipo de oferta 'Venta'");
         }
@@ -281,7 +308,7 @@ public class PublicacionService {
         if (request.getPrecio_maximo() != null && !request.getTipos_oferta().contains(TipoOferta.Venta)) {
             throw new IllegalArgumentException("Si se especifica un precio maximo, debe incluirse el tipo de oferta 'Venta'");
         }
-            List<RecuperarPublicacionResponse> response = new ArrayList<>();
+            List<Publicacion> publicaciones = new ArrayList<>();
             List<String> idiomas = (request.getIdiomas() == null || request.getIdiomas().isEmpty()) ? null : request.getIdiomas();
             List<TipoOferta> tipos_ofertas = (request.getTipos_oferta() == null || request.getTipos_oferta().isEmpty()) ? null : request.getTipos_oferta();
             String query = request.getQuery();
@@ -289,45 +316,39 @@ public class PublicacionService {
             Boolean digital = request.getDigital();
             Double precio_minimo = request.getPrecio_minimo();
             Double precio_maximo = request.getPrecio_maximo();
+            List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
             if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
-                response.addAll(publicacionRepository.buscarPorLibro
-                        (query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
-                        .stream()
-                        .map(this::mapToResponseRecuperarPublicacion) 
-                        .toList()
+                publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(
+                    query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
                 );
-                List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
-                response.addAll(publicacionRepository.buscarPorApunte
-                        (query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
-                        .stream()
-                        .map(this::mapToResponseRecuperarPublicacion) 
-                        .toList()
+                publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(
+                    query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
                 );
-                return response;
             } else {
                 if (request.getTipos_material().contains(TipoMaterial.Libro)) {
-                    response.addAll(publicacionRepository.buscarPorLibro
+                    publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles
                             (query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
-                            .stream()
-                            .map(this::mapToResponseRecuperarPublicacion) 
-                            .toList()
                     );
                 }
                 if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
-                    List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
-                    response.addAll(publicacionRepository.buscarPorApunte
+                    publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles
                             (query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
-                            .stream()
-                            .map(this::mapToResponseRecuperarPublicacion) 
-                            .toList()
                     );
                 }
-                return response;
             }
+            // Paginar
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), publicaciones.size());
+            List<RecuperarPublicacionResponse> contenido  = publicaciones.subList(start, end)
+                    .stream()
+                    .map(this::mapToResponseRecuperarPublicacion)
+                    .toList();
+            Page<RecuperarPublicacionResponse> response = new PageImpl<>(contenido, pageable, publicaciones.size());
+            return mapToResponsePageRecuperarPublicacion(response);
     }
 
-    public PageRecuperarPublicacionResponse recuperarPublicaciones(Pageable pageable) {
-        Page<RecuperarPublicacionResponse> publicaciones  = publicacionRepository.findAll(pageable)
+    public PageRecuperarPublicacionResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud, Double usuario_latitud) {
+        Page<RecuperarPublicacionResponse> publicaciones  = publicacionRepository.findAllDisponiblesOrderByDistance(usuario_latitud,usuario_longitud,pageable)
                 .map(this::mapToResponseRecuperarPublicacion);
         PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
         response.setContent(publicaciones.getContent());
@@ -339,25 +360,24 @@ public class PublicacionService {
     }
 
     public RecuperarPublicacionResponse recuperarPublicacionById(Long id) {
-        Publicacion publicacion = publicacionRepository.findById(id)
+        Publicacion publicacion = publicacionRepository.findDisponibleById(id)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+id));
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public List<RecuperarPublicacionResponse> recuperarPublicacionesByUserId(Long usuario_id) {
-        return publicacionRepository.findByUsuarioId(usuario_id)
-                .stream()
-                .map(this::mapToResponseRecuperarPublicacion) 
-                .toList();
+    public void eliminarPublicacionById(DeletePublicacionRequest request) {
+        Publicacion publicacion = publicacionRepository.findById(request.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+request.getId()));
+        if (publicacion.getUsuario().getId()!=request.getUsuarioId()) {
+            throw new IllegalArgumentException("La publicacion no es del usuario con id: "+request.getUsuarioId());
+        }    
+        publicacion.setDisponible(false);
+        publicacionRepository.save(publicacion);
     }
 
-    public Double calcularPrecio(TipoOferta tipo_oferta, Double precio) {
-        switch (tipo_oferta) {
-            case TipoOferta.Venta:
-                return precio;
-            default:
-                return (double) 0;
-        }
+    public PageRecuperarPublicacionResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
+        return mapToResponsePageRecuperarPublicacion(publicacionRepository.findAllDisponiblesByUsuarioId(usuario_id, pageable)
+                .map(this::mapToResponseRecuperarPublicacion));
     }
 
     public Editorial recuperarEditorial(String editorial) {
@@ -365,7 +385,6 @@ public class PublicacionService {
                 .orElseGet(() -> editorialRepository.save(Editorial.builder().nombre(editorial).build()));
     }
 
-    
     public Genero recuperarGenero(String genero) {
         return generoRepository.findByNombre(genero)
                 .orElseGet(() -> generoRepository.save(Genero.builder().nombre(genero).build()));
