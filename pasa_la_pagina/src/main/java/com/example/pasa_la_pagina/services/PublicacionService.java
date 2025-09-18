@@ -1,11 +1,20 @@
 package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.example.pasa_la_pagina.DTOs.requests.BuscarPublicacionRequest;
+import com.example.pasa_la_pagina.DTOs.requests.DeletePublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
+import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.entities.Apunte;
 import com.example.pasa_la_pagina.entities.Autor;
@@ -13,6 +22,7 @@ import com.example.pasa_la_pagina.entities.Carrera;
 import com.example.pasa_la_pagina.entities.Editorial;
 import com.example.pasa_la_pagina.entities.Foto;
 import com.example.pasa_la_pagina.entities.Genero;
+import com.example.pasa_la_pagina.entities.Idioma;
 import com.example.pasa_la_pagina.entities.Institucion;
 import com.example.pasa_la_pagina.entities.Libro;
 import com.example.pasa_la_pagina.entities.Materia;
@@ -26,6 +36,7 @@ import com.example.pasa_la_pagina.repositories.AutorRepository;
 import com.example.pasa_la_pagina.repositories.CarreraRepository;
 import com.example.pasa_la_pagina.repositories.EditorialRepository;
 import com.example.pasa_la_pagina.repositories.GeneroRepository;
+import com.example.pasa_la_pagina.repositories.IdiomaRepository;
 import com.example.pasa_la_pagina.repositories.InstitucionRepository;
 import com.example.pasa_la_pagina.repositories.MateriaRepository;
 import com.example.pasa_la_pagina.repositories.PublicacionRepository;
@@ -36,6 +47,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PublicacionService {
 
@@ -48,6 +60,8 @@ public class PublicacionService {
     private final CarreraRepository carreraRepository;
     private final GeneroRepository generoRepository;
     private final AutorRepository autorRepository;
+    private final IdiomaRepository idiomaRepository;
+
 
     private RecuperarPublicacionResponse mapToResponseRecuperarPublicacion(Publicacion publicacion) {
         RecuperarPublicacionResponse response = new RecuperarPublicacionResponse();
@@ -56,16 +70,19 @@ public class PublicacionService {
         response.setLongitud(publicacion.getLongitud());
         response.setPrecio(publicacion.getPrecio());
         response.setTipo_oferta(publicacion.getTipo_oferta());
-        response.setDisponible(publicacion.isDisponible());
-        response.setDigital(publicacion.isDigital());
+        response.setDisponible(publicacion.getDisponible());
         response.setUsuario_id(publicacion.getUsuario().getId());
+        response.setUsuario_nombre(publicacion.getUsuario().getNombre());
+        response.setUsuario_apellido(publicacion.getUsuario().getApellido());
         if (publicacion.getMaterial() instanceof Libro libro) {
             response.setTipo_material(TipoMaterial.Libro);
             response.setTitulo(libro.getTitulo());
             response.setDescripcion(libro.getDescripcion());
-            response.setNuevo(libro.isNuevo());
-            response.setIdioma(libro.getIdioma());
+            response.setDigital(libro.getDigital());
+            response.setNuevo(libro.getNuevo());
+            response.setIdioma(libro.getIdioma().getNombre());
             response.setCantidad(libro.getCantidad());
+            response.setIsbn(libro.getIsbn());
             response.setEditorial(libro.getEditorial().getNombre());
             response.setAutor(libro.getAutor().getNombre());
             response.setGenero(libro.getGenero().getNombre());
@@ -75,8 +92,9 @@ public class PublicacionService {
                 response.setTipo_material(TipoMaterial.Apunte);
                 response.setTitulo(apunte.getTitulo());
                 response.setDescripcion(apunte.getDescripcion());
-                response.setNuevo(apunte.isNuevo());
-                response.setIdioma(apunte.getIdioma());
+                response.setDigital(apunte.getDigital());
+                response.setNuevo(apunte.getNuevo());
+                response.setIdioma(apunte.getIdioma().getNombre());
                 response.setCantidad(apunte.getCantidad());
                 response.setUrl_fotos(apunte.getFotos().stream().map(Foto::getUrl).toList());
                 response.setCantidad_paginas(apunte.getCantidad_paginas());
@@ -94,8 +112,23 @@ public class PublicacionService {
         return response;
     }
 
-    public RecuperarPublicacionResponse nuevaPublicacionLibro(PublicacionLibroRequest request) {
+    private PageRecuperarPublicacionResponse mapToResponsePageRecuperarPublicacion(Page<RecuperarPublicacionResponse> page_publicaciones) {
+        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        response.setContent(page_publicaciones.getContent());
+        response.setSize(page_publicaciones.getSize());
+        response.setTotalElements(page_publicaciones.getTotalElements());
+        response.setTotalPages(page_publicaciones.getTotalPages());
+        return response;
+    }
 
+    public RecuperarPublicacionResponse nuevaPublicacionLibro(PublicacionLibroRequest request) {
+        if (request.getTipo_oferta() != TipoOferta.Venta && request.getPrecio() != null) {
+            throw new IllegalArgumentException("El precio solo puede ser especificado si el tipo de oferta es 'Venta'");
+        }
+        if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
+            throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
+        }
+        Idioma idioma = recuperarIdioma(request.getIdioma());
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Editorial editorial = recuperarEditorial(request.getEditorial());
         Genero genero = recuperarGenero(request.getGenero());
@@ -104,8 +137,9 @@ public class PublicacionService {
         Libro libro = Libro.builder()
                 .titulo(request.getTitulo())
                 .descripcion(request.getDescripcion())
-                .nuevo(request.isNuevo())
-                .idioma(request.getIdioma())
+                .digital(request.getDigital())
+                .nuevo(request.getNuevo())
+                .idioma(idioma)
                 .isbn(request.getIsbn())
                 .cantidad(request.getCantidad())
                 .editorial(editorial)
@@ -117,8 +151,7 @@ public class PublicacionService {
 
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
-                .precio(calcularPrecio(request.getTipo_oferta(), request.getPrecio()))
-                .digital(request.isDigital())
+                .precio(request.getPrecio())
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .tipo_oferta(request.getTipo_oferta())
@@ -136,11 +169,17 @@ public class PublicacionService {
         if (request.getNivel_educativo() == NivelEducativo.Superior && request.getCarrera() == null) {
             throw new IllegalArgumentException("La carrera es obligatoria si el nivel educativo es Superior");
         }
+        if (request.getTipo_oferta() != TipoOferta.Venta && request.getPrecio() != null) {
+            throw new IllegalArgumentException("El precio solo puede ser especificado si el tipo de oferta es 'Venta'");
+        }
+        if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
+            throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
+        }
+        Idioma idioma = recuperarIdioma(request.getIdioma());
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
         Institucion institucion = recuperarInstitucion(request.getInstitucion(), request.getNivel_educativo());
         Seccion seccion = recuperarSeccion(request.getSeccion());
         Materia materia = recuperarMateria(request.getMateria());
-        ;
         Carrera carrera = null;
         if (request.getNivel_educativo() == NivelEducativo.Superior) {
             carrera = recuperarCarrera(request.getCarrera());
@@ -149,8 +188,9 @@ public class PublicacionService {
         Apunte apunte = Apunte.builder()
                 .titulo(request.getTitulo())
                 .descripcion(request.getDescripcion())
-                .nuevo(request.isNuevo())
-                .idioma(request.getIdioma())
+                .digital(request.getDigital())
+                .nuevo(request.getNuevo())
+                .idioma(idioma)
                 .cantidad(request.getCantidad())
                 .anio_elaboracion(request.getAnio_elaboracion())
                 .cantidad_paginas(request.getCantidad_paginas())
@@ -164,8 +204,7 @@ public class PublicacionService {
 
         Publicacion publicacion = Publicacion.builder()
                 .fecha_creacion(LocalDateTime.now())
-                .precio(calcularPrecio(request.getTipo_oferta(), request.getPrecio()))
-                .digital(request.isDigital())
+                .precio(request.getPrecio())
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .tipo_oferta(request.getTipo_oferta())
@@ -178,16 +217,174 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public Double calcularPrecio(TipoOferta tipo_oferta, Double precio) {
-        switch (tipo_oferta) {
-            case TipoOferta.Venta:
-                return precio;
-            default:
-                return (double) 0;
+    public RecuperarPublicacionResponse actualizarPublicacion(UpdatePublicacionRequest request){
+        Publicacion publicacion = publicacionRepository.findById(request.getId())
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+request.getId()));
+        if (publicacion.getUsuario().getId()!=request.getUsuarioId()) {
+            throw new IllegalArgumentException("La publicacion no es del usuario con id: "+request.getUsuarioId());
         }
+        if (request.getTipo_material()==TipoMaterial.Apunte && request.getNivel_educativo()!=NivelEducativo.Superior && request.getCarrera()==null) {
+            throw new IllegalArgumentException("La carrera es obligatoria si el nivel educativo es Superior");
+        }
+        if (request.getUrl_fotos()==null || request.getUrl_fotos().isEmpty()) {
+            throw new IllegalArgumentException("Debe haber alguna imagen en la publicacion");
+        }
+        if (request.getTipo_oferta() != TipoOferta.Venta && request.getPrecio() != null) {
+            throw new IllegalArgumentException("El precio solo puede ser especificado si el tipo de oferta es 'Venta'");
+        }
+        if (request.getTipo_oferta() == TipoOferta.Venta && request.getPrecio() == null) {
+            throw new IllegalArgumentException("El precio es obligatorio si el tipo de oferta es 'Venta'");
+        }
+
+        if (request.getLatitud() != null) publicacion.setLatitud(request.getLatitud());
+        if (request.getLongitud() != null) publicacion.setLongitud(request.getLongitud());
+        if (request.getTipo_oferta() != null) publicacion.setTipo_oferta(request.getTipo_oferta());
+        if (request.getPrecio() != null) publicacion.setPrecio(request.getPrecio());
+        if(request.getTitulo() != null) publicacion.getMaterial().setTitulo(request.getTitulo());
+        if(request.getDescripcion() != null) publicacion.getMaterial().setDescripcion(request.getDescripcion());
+        if(request.getNuevo() != null) publicacion.getMaterial().setNuevo(request.getNuevo());
+        if(request.getDigital() != null) publicacion.getMaterial().setDigital(request.getDigital());
+        if(request.getIdioma() != null) publicacion.getMaterial().setIdioma(recuperarIdioma(request.getIdioma()));
+        if(request.getCantidad() != null) publicacion.getMaterial().setCantidad(request.getCantidad());
+        if(request.getUrl_fotos() != null){
+            List<Foto> fotosActuales = publicacion.getMaterial().getFotos();
+
+            fotosActuales.removeIf(foto -> request.getUrl_fotos()
+                    .stream()
+                    .noneMatch(url -> url.trim().equalsIgnoreCase(foto.getUrl().trim()))
+            );
+
+            // Obtener las URLs que ya existen
+            List<String> urlsExistentes = fotosActuales.stream()
+                    .map(Foto::getUrl)
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .toList();
+
+            // Agregar fotos nuevas
+            List<Foto> nuevasFotos = request.getUrl_fotos().stream()
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .filter(url -> !urlsExistentes.contains(url))
+                    .map(url -> Foto.builder()
+                            .url(url)
+                            .material(publicacion.getMaterial())
+                            .build())
+                    .toList();
+            publicacion.getMaterial().getFotos().addAll(nuevasFotos);
+        }
+
+
+        if (publicacion.getMaterial() instanceof Libro libro) {
+            if(request.getIsbn() != null) libro.setIsbn(request.getIsbn());
+            if(request.getEditorial() != null) libro.setEditorial(recuperarEditorial(request.getEditorial()));
+            if(request.getGenero() != null) libro.setGenero(recuperarGenero(request.getGenero()));
+            if(request.getAutor() != null) libro.setAutor(recuperarAutor(request.getAutor()));
+        }
+
+        if (publicacion.getMaterial() instanceof Apunte apunte) {
+            if(request.getCantidad_paginas() != null) apunte.setCantidad_paginas(request.getCantidad_paginas());
+            if(request.getAnio_elaboracion() != null) apunte.setAnio_elaboracion(request.getAnio_elaboracion());
+            if(request.getMateria() != null) apunte.setMateria(recuperarMateria(request.getMateria()));
+            if(request.getInstitucion() != null) apunte.setInstitucion(recuperarInstitucion(request.getInstitucion(),request.getNivel_educativo() != null ? request.getNivel_educativo() : apunte.getInstitucion().getNivelEducativo()));
+            if(request.getSeccion() != null) apunte.setSeccion(recuperarSeccion(request.getSeccion()));
+            if (request.getNivel_educativo()!=NivelEducativo.Superior) {
+                apunte.setCarrera(null);
+            }
+            if (request.getCarrera()!=null && apunte.getInstitucion().getNivelEducativo()==NivelEducativo.Superior) {
+                apunte.setCarrera(recuperarCarrera(request.getCarrera()));
+            }
+        }
+
+        publicacionRepository.save(publicacion);
+
+        return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    @Transactional
+    public PageRecuperarPublicacionResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable) {
+        if (request == null) return mapToResponsePageRecuperarPublicacion(publicacionRepository.findAllDisponibles(pageable).map(this::mapToResponseRecuperarPublicacion));
+            
+        if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null) && request.getTipos_oferta() == null) {
+            throw new IllegalArgumentException("Si se especifica un precio mínimo o maximo, debe incluirse el tipo de oferta 'Venta'");
+        }
+        if (request.getPrecio_minimo() != null && !request.getTipos_oferta().contains(TipoOferta.Venta)) {
+            throw new IllegalArgumentException("Si se especifica un precio minimo, debe incluirse el tipo de oferta 'Venta'");
+        }
+        if (request.getPrecio_maximo() != null && !request.getTipos_oferta().contains(TipoOferta.Venta)) {
+            throw new IllegalArgumentException("Si se especifica un precio maximo, debe incluirse el tipo de oferta 'Venta'");
+        }
+            List<Publicacion> publicaciones = new ArrayList<>();
+            List<String> idiomas = (request.getIdiomas() == null || request.getIdiomas().isEmpty()) ? null : request.getIdiomas();
+            List<TipoOferta> tipos_ofertas = (request.getTipos_oferta() == null || request.getTipos_oferta().isEmpty()) ? null : request.getTipos_oferta();
+            String query = request.getQuery();
+            Boolean nuevo = request.getNuevo();
+            Boolean digital = request.getDigital();
+            Double precio_minimo = request.getPrecio_minimo();
+            Double precio_maximo = request.getPrecio_maximo();
+            List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
+            if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
+                publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(
+                    query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
+                );
+                publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(
+                    query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
+                );
+            } else {
+                if (request.getTipos_material().contains(TipoMaterial.Libro)) {
+                    publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles
+                            (query, nuevo, digital,idiomas, tipos_ofertas, precio_minimo, precio_maximo)
+                    );
+                }
+                if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
+                    publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles
+                            (query, nuevo, digital,idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo)
+                    );
+                }
+            }
+            // Paginar
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), publicaciones.size());
+            List<RecuperarPublicacionResponse> contenido  = publicaciones.subList(start, end)
+                    .stream()
+                    .map(this::mapToResponseRecuperarPublicacion)
+                    .toList();
+            Page<RecuperarPublicacionResponse> response = new PageImpl<>(contenido, pageable, publicaciones.size());
+            return mapToResponsePageRecuperarPublicacion(response);
+    }
+
+    public PageRecuperarPublicacionResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud, Double usuario_latitud) {
+        Page<RecuperarPublicacionResponse> publicaciones  = publicacionRepository.findAllDisponiblesOrderByDistance(usuario_latitud,usuario_longitud,pageable)
+                .map(this::mapToResponseRecuperarPublicacion);
+        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        response.setContent(publicaciones.getContent());
+        response.setSize(publicaciones.getSize());
+        response.setTotalElements(publicaciones.getTotalElements());
+        response.setTotalPages(publicaciones.getTotalPages());
+
+        return response;
+    }
+
+    public RecuperarPublicacionResponse recuperarPublicacionById(Long id) {
+        Publicacion publicacion = publicacionRepository.findDisponibleById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+id));
+        return mapToResponseRecuperarPublicacion(publicacion);
+    }
+
+    public void eliminarPublicacionById(DeletePublicacionRequest request) {
+        Publicacion publicacion = publicacionRepository.findById(request.getId())
+                        .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: "+request.getId()));
+        if (publicacion.getUsuario().getId()!=request.getUsuarioId()) {
+            throw new IllegalArgumentException("La publicacion no es del usuario con id: "+request.getUsuarioId());
+        }    
+        publicacion.setDisponible(false);
+        publicacionRepository.save(publicacion);
+    }
+
+    public PageRecuperarPublicacionResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
+        return mapToResponsePageRecuperarPublicacion(publicacionRepository.findAllDisponiblesByUsuarioId(usuario_id, pageable)
+                .map(this::mapToResponseRecuperarPublicacion));
+    }
+
     public Editorial recuperarEditorial(String editorial) {
         return editorialRepository.findByNombre(editorial)
                 .orElseGet(() -> editorialRepository.save(Editorial.builder().nombre(editorial).build()));
@@ -222,5 +419,10 @@ public class PublicacionService {
     public Carrera recuperarCarrera(String carrera) {
         return carreraRepository.findByNombre(carrera)
                 .orElseGet(() -> carreraRepository.save(Carrera.builder().nombre(carrera).build()));
+    }
+
+    public Idioma recuperarIdioma(String idioma) {
+        return idiomaRepository.findByNombre(idioma).
+        orElseThrow(() -> new IllegalArgumentException("No se encontro el idioma con nombre: "+idioma));
     }
 }

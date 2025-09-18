@@ -20,10 +20,7 @@ public class Publicacion {
     private Long id;
 
     @Column(name = "disponible", nullable = false)
-    private boolean disponible;
-
-    @Column(name = "digital", nullable = false)
-    private boolean digital;    
+    private Boolean disponible;   
 
     @Column(name = "latitud", nullable = false)
     private Double latitud;

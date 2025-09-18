@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,5 +22,6 @@ public class Foto {
 
     @ManyToOne
     @JoinColumn(name = "material_id", nullable = false)
+    @JsonBackReference
     private Material material;
 }
