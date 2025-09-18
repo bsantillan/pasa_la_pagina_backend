@@ -13,7 +13,10 @@ public class Chat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    
+    @Column(name = "activo", nullable = false)
+    @Builder.Default
+    private boolean activo = true;
+
     @Column(length = 100)
     private String titulo;
 
