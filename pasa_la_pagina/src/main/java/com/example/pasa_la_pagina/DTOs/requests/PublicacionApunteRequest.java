@@ -20,10 +20,10 @@ public class PublicacionApunteRequest {
     private String descripcion;
 
     @NotNull(message = "El si es nuevo es obligatorio")
-    private boolean nuevo;
+    private Boolean nuevo;
 
     @NotNull(message = "El si es digital es obligatorio")
-    private boolean digital;
+    private Boolean digital;
 
     @NotNull(message = "La latitud es obligatoria")
     private Double latitud;

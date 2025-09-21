@@ -1,4 +1,4 @@
-package com.example.pasa_la_pagina.DTOs.response;
+package com.example.pasa_la_pagina.DTOs.requests;
 
 import java.util.List;
 
@@ -6,15 +6,17 @@ import com.example.pasa_la_pagina.entities.Enum.NivelEducativo;
 import com.example.pasa_la_pagina.entities.Enum.TipoMaterial;
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class RecuperarPublicacionResponse {
+public class UpdatePublicacionRequest {
+    @NotNull(message = "El id de la publicacion es obligatorio")
     private Long id;
     private String titulo;
     private String descripcion;
     private Boolean nuevo;
-    private Boolean disponible;
+    private Boolean disponible; 
     private Boolean digital;
     private Double latitud;
     private Double longitud;
@@ -23,12 +25,14 @@ public class RecuperarPublicacionResponse {
     private Integer cantidad;
     private TipoOferta tipo_oferta;
     private List<String> url_fotos;
-    private Long usuario_id;
-    private String usuario_nombre;
-    private String usuario_apellido;
 
+    @NotNull(message = "El usuarioId es obligatorio")
+    private Long usuarioId;
+
+    @NotNull(message = "El tipo de material es obligatorio")
     private TipoMaterial tipo_material;
 
+    // Campos de Apunte
     private Integer cantidad_paginas;
     private Integer anio_elaboracion;
     private String materia;
@@ -37,9 +41,9 @@ public class RecuperarPublicacionResponse {
     private String seccion;
     private String carrera;
 
+    // Campos de Libro
     private String isbn;
     private String editorial;
     private String genero;
     private String autor;
-
 }
