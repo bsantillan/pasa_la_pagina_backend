@@ -33,10 +33,6 @@ public class PublicacionLibroRequest {
     @NotBlank(message = "El idioma es obligatorio")
     private String idioma;
 
-    @Positive(message = "El precio tiene que ser mayor que 0")
-    private Double precio;
-
-    @NotNull(message = "La cantidad de material es obligatorio")
     @Positive(message = "La cantidad tiene que ser mayor que 0")
     private Integer cantidad;
 
@@ -60,4 +56,9 @@ public class PublicacionLibroRequest {
 
     @NotBlank(message = "La editorial es obligatoria")
     private String editorial;
+
+    @Positive(message = "El precio tiene que ser mayor que 0")
+    private Double precio;
+
+    private String url;
 }

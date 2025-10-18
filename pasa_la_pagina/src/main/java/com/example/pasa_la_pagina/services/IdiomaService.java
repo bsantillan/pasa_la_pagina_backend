@@ -1,7 +1,6 @@
 package com.example.pasa_la_pagina.services;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 @RequiredArgsConstructor
 public class IdiomaService {
-    
+
     private final IdiomaRepository idiomaRepository;
 
     private IdiomaResponse mapToResponseIdioma(Idioma idioma) {
@@ -25,10 +24,11 @@ public class IdiomaService {
         return response;
     }
 
-    public List<IdiomaResponse> findAll(){
+    public List<IdiomaResponse> buscarIdiomas(String q) {
         return idiomaRepository.findAll()
-            .stream()
-            .map(this::mapToResponseIdioma)
-            .collect(Collectors.toList());
+                .stream()
+                .filter(idioma -> idioma.getNombre().toLowerCase().contains(q.toLowerCase()))
+                .map(this::mapToResponseIdioma)
+                .toList();
     }
 }
