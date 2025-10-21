@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.pasa_la_pagina.entities.Libro;
+import com.example.pasa_la_pagina.DTOs.response.LibroResponse;
 import com.example.pasa_la_pagina.services.LibroService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class LibroController {
     private final LibroService libroService;
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<Libro>> buscarLibros(@RequestParam String isbn) {
+    public ResponseEntity<List<LibroResponse>> buscarLibros(@RequestParam String isbn) {
         return ResponseEntity.ok(libroService.buscarLibros(isbn));
     }
 }
