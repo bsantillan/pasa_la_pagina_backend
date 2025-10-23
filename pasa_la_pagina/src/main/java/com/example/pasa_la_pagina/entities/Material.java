@@ -35,6 +35,9 @@ public abstract class Material {
     @Column(name = "digital", nullable = false)
     private Boolean digital; 
 
+    @Column(name = "url", nullable = true, length = 200)
+    private String url;
+
     @ManyToOne
     @JoinColumn(name = "idioma_id", nullable = false)
     private Idioma idioma;

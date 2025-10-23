@@ -21,6 +21,7 @@ public class RecuperarPublicacionResponse {
     private String idioma;
     private Double precio;
     private Integer cantidad;
+    private String url;
     private TipoOferta tipo_oferta;
     private List<String> url_fotos;
     private Long usuario_id;
