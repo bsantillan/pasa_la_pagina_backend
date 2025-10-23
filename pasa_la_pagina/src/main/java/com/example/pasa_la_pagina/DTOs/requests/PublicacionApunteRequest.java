@@ -20,10 +20,10 @@ public class PublicacionApunteRequest {
     private String descripcion;
 
     @NotNull(message = "El si es nuevo es obligatorio")
-    private boolean nuevo;
+    private Boolean nuevo;
 
     @NotNull(message = "El si es digital es obligatorio")
-    private boolean digital;
+    private Boolean digital;
 
     @NotNull(message = "La latitud es obligatoria")
     private Double latitud;
@@ -37,10 +37,6 @@ public class PublicacionApunteRequest {
     @Positive(message = "El precio tiene que ser mayor que 0")
     private Double precio;
 
-    @NotNull(message = "La cantidad de material es obligatorio")
-    @Positive(message = "La cantidad tiene que ser mayor que 0")
-    private Integer cantidad;
-
     @NotNull(message = "El anio de elaboracion es obligatorio")
     @Positive(message = "El anio de elaboracion tiene que ser mayor que 0")
     private Integer anio_elaboracion;
@@ -53,7 +49,7 @@ public class PublicacionApunteRequest {
 
     @NotNull(message = "El usuarioId es obligatorio")
     private Long usuarioId;
-    
+
     @NotNull(message = "La cantidad de paginas es obligatorio")
     @Positive(message = "La cantidad de paginas tiene que ser mayor que 0")
     private Integer cantidad_paginas;
@@ -70,6 +66,10 @@ public class PublicacionApunteRequest {
     @NotNull(message = "La seccion es obligatoria")
     private String seccion;
 
+    @Positive(message = "La cantidad tiene que ser mayor que 0")
+    private Integer cantidad;
+
     private String carrera;
 
+    private String url;
 }

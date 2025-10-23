@@ -19,10 +19,10 @@ public class PublicacionLibroRequest {
     private String descripcion;
 
     @NotNull(message = "El si es nuevo es obligatorio")
-    private boolean nuevo;
+    private Boolean nuevo;
 
     @NotNull(message = "El si es digital es obligatorio")
-    private boolean digital;
+    private Boolean digital;
 
     @NotNull(message = "La latitud es obligatoria")
     private Double latitud;
@@ -33,10 +33,6 @@ public class PublicacionLibroRequest {
     @NotBlank(message = "El idioma es obligatorio")
     private String idioma;
 
-    @Positive(message = "El precio tiene que ser mayor que 0")
-    private Double precio;
-
-    @NotNull(message = "La cantidad de material es obligatorio")
     @Positive(message = "La cantidad tiene que ser mayor que 0")
     private Integer cantidad;
 
@@ -60,4 +56,9 @@ public class PublicacionLibroRequest {
 
     @NotBlank(message = "La editorial es obligatoria")
     private String editorial;
+
+    @Positive(message = "El precio tiene que ser mayor que 0")
+    private Double precio;
+
+    private String url;
 }

@@ -3,6 +3,8 @@ package com.example.pasa_la_pagina.entities;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -28,14 +30,22 @@ public abstract class Material {
     private String descripcion;
 
     @Column(name = "nuevo", nullable = false)
-    private boolean nuevo;
+    private Boolean nuevo;
 
-    @Column(name = "idioma", nullable = false, length = 50)
-    private String idioma;
+    @Column(name = "digital", nullable = false)
+    private Boolean digital; 
+
+    @Column(name = "url", nullable = true, length = 200)
+    private String url;
+
+    @ManyToOne
+    @JoinColumn(name = "idioma_id", nullable = false)
+    private Idioma idioma;
 
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
-    @OneToMany(mappedBy = "material", cascade = CascadeType.PERSIST, orphanRemoval = true)
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Foto> fotos;
 }

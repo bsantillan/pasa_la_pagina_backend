@@ -54,5 +54,10 @@ public class UsuarioController {
         return ResponseEntity.ok(updated);
     }
     
+    @GetMapping("/me")
+    public ResponseEntity<RecuperarUsuarioResponse> recuperarUsuarioAccess(Authentication authentication) {
+        RecuperarUsuarioResponse usuario = usuarioService.recuperarUsuarioByEmail(authentication.getName());
+        return ResponseEntity.ok(usuario);
+    }    
     
 }
