@@ -11,7 +11,8 @@ import lombok.Getter;
 @Builder
 public class IntercambioResponse {
     private final Long id;
-    private final Long solicitanteId;
+    private String usuario_nombre;
+    private String usuario_apellido;
     private final Long propietarioId;
     private final Long chatId;
     private final LocalDateTime fechaInicio;

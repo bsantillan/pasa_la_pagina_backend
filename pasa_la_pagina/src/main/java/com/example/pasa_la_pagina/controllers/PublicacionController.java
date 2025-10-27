@@ -18,7 +18,7 @@ import com.example.pasa_la_pagina.DTOs.requests.DeletePublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
-import com.example.pasa_la_pagina.DTOs.response.PageRecuperarPublicacionResponse;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.services.PublicacionService;
 
@@ -51,7 +51,7 @@ public class PublicacionController {
     }
 
     @PostMapping("/buscar")
-    public ResponseEntity<PageRecuperarPublicacionResponse> buscarPublicaciones(
+    public ResponseEntity<PageRecuperarResponse> buscarPublicaciones(
             @Valid @RequestBody(required = false) BuscarPublicacionRequest request,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -60,7 +60,7 @@ public class PublicacionController {
     }
 
     @GetMapping("/paginado")
-    public ResponseEntity<PageRecuperarPublicacionResponse> recuperarPublicaciones(
+    public ResponseEntity<PageRecuperarResponse> recuperarPublicaciones(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam Double usuario_latitud,
@@ -81,7 +81,7 @@ public class PublicacionController {
     }
 
     @GetMapping("/usuario/{usuario_id}")
-    public ResponseEntity<PageRecuperarPublicacionResponse> recuperarPublicacionesByUserId(
+    public ResponseEntity<PageRecuperarResponse> recuperarPublicacionesByUserId(
             @PathVariable Long usuario_id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {

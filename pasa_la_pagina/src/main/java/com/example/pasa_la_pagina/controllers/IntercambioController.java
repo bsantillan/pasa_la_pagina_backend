@@ -7,74 +7,99 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.pasa_la_pagina.DTOs.requests.SolicitarIntercambioRequest;
-import com.example.pasa_la_pagina.DTOs.response.IntercambioResponse;
+import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.services.IntercambioService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/intercambios")
+@RequestMapping("/intercambio")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000","http://localhost:5173"}, allowCredentials = "true")
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173" }, allowCredentials = "true")
 @Tag(name = "Intercambios", description = "Operaciones sobre propuestas de intercambio")
 public class IntercambioController {
 
     private final IntercambioService intercambioService;
 
-    @PostMapping
+    @PostMapping("/solicitar/{publicacionId}")
     @Operation(summary = "Solicitar intercambio", description = "Registra una propuesta de intercambio. El chat queda deshabilitado hasta la aceptacion del propietario.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Intercambio creado"),
-        @ApiResponse(responseCode = "400", description = "Solicitud invalida"),
-        @ApiResponse(responseCode = "404", description = "Publicacion o usuario inexistente")
+            @ApiResponse(responseCode = "200", description = "Intercambio creado"),
+            @ApiResponse(responseCode = "400", description = "Solicitud invalida"),
+            @ApiResponse(responseCode = "404", description = "Publicacion o usuario inexistente")
     })
-    public ResponseEntity<IntercambioResponse> solicitar(
-        @Valid @RequestBody SolicitarIntercambioRequest request,
-        Principal principal
-    ) {
-        IntercambioResponse response = intercambioService.solicitarIntercambio(request, principal.getName());
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> solicitar(@NotNull Long publicacionId, Principal principal) {
+        intercambioService.solicitarIntercambio(publicacionId, principal.getName());
+        return ResponseEntity.ok("Intercambio solicitado correctamente.");
     }
 
-    @PatchMapping("/{intercambioId}/aceptar")
+    @PatchMapping("/aceptar/{id}")
     @Operation(summary = "Aceptar intercambio", description = "Solo el propietario habilita el chat cuando acepta la propuesta.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Intercambio habilitado"),
-        @ApiResponse(responseCode = "403", description = "Usuario no autorizado a aceptar"),
-        @ApiResponse(responseCode = "404", description = "Intercambio inexistente"),
-        @ApiResponse(responseCode = "409", description = "Intercambio no se puede aceptar")
+            @ApiResponse(responseCode = "200", description = "Intercambio habilitado"),
+            @ApiResponse(responseCode = "403", description = "Usuario no autorizado a aceptar"),
+            @ApiResponse(responseCode = "404", description = "Intercambio inexistente"),
+            @ApiResponse(responseCode = "409", description = "Intercambio no se puede aceptar")
     })
-    public ResponseEntity<IntercambioResponse> aceptar(
-        @PathVariable Long intercambioId,
-        Principal principal
-    ) {
-        IntercambioResponse response = intercambioService.aceptarIntercambio(intercambioId, principal.getName());
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> aceptar(@PathVariable Long id, Principal principal) {
+        intercambioService.aceptarIntercambio(id, principal.getName());
+        return ResponseEntity.ok("Intercambio aceptado correctamente.");
     }
 
-    @PatchMapping("/{intercambioId}/cancelar")
-    @Operation(summary = "Cancelar intercambio", description = "Cancela una propuesta pendiente e inhabilita el chat asociado")
+    @PatchMapping("/concretar/{id}")
+    @Operation(summary = "Concretar intercambio", description = "Ambos usuarios deben concretarlo. Cuando ambos confirman, el estado se actualiza a CONCRETADO.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Intercambio cancelado"),
-        @ApiResponse(responseCode = "403", description = "Usuario no autorizado a cancelar"),
-        @ApiResponse(responseCode = "404", description = "Intercambio inexistente"),
-        @ApiResponse(responseCode = "409", description = "Intercambio no se puede cancelar")
+            @ApiResponse(responseCode = "200", description = "Intercambio concretado"),
+            @ApiResponse(responseCode = "403", description = "Usuario no autorizado a concretar"),
+            @ApiResponse(responseCode = "404", description = "Intercambio inexistente"),
+            @ApiResponse(responseCode = "409", description = "Intercambio no se puede concretar")
     })
-    public ResponseEntity<IntercambioResponse> cancelar(
-        @PathVariable Long intercambioId,
-        Principal principal
-    ) {
-        IntercambioResponse response = intercambioService.cancelarIntercambio(intercambioId, principal.getName());
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> concretar(@PathVariable Long id, Principal principal) {
+        intercambioService.concretarIntercambio(id, principal.getName());
+        return ResponseEntity.ok("Intercambio concretado correctamente.");
+    }
+
+    @PatchMapping("/concretar/{id}")
+    @Operation(summary = "Cancelar intercambio", description = "Cancela una propuesta pendiente e cancela un intercambio ")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Intercambio cancelado"),
+            @ApiResponse(responseCode = "403", description = "Usuario no autorizado a cancelar"),
+            @ApiResponse(responseCode = "404", description = "Intercambio inexistente"),
+            @ApiResponse(responseCode = "409", description = "Intercambio no se puede cancelar")
+    })
+    public ResponseEntity<?> cancelar(@PathVariable Long id, Principal principal) {
+        intercambioService.cancelarIntercambio(id, principal.getName());
+        return ResponseEntity.ok("Intercambio cancelado correctamente.");
+    }
+
+    @PostMapping("/paginado")
+    @Operation(
+        summary = "Buscar intercambios",
+        description = "Permite buscar y filtrar intercambios según varios criterios: rol del usuario, estado del intercambio, fecha de inicio, título de la publicación y nombre del usuario. También se puede ordenar por fecha, título o estado."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Se retornan los intercambios que cumplen los filtros"),
+        @ApiResponse(responseCode = "400", description = "Solicitud inválida"),
+        @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<PageRecuperarResponse> buscarIntercambios(
+            @Valid @RequestBody(required = false) BuscarIntercambioRequest filtros,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal) {
+        return ResponseEntity.ok(intercambioService.buscarIntercambios(page, size, principal.getName(), filtros));
     }
 }

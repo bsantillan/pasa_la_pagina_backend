@@ -14,7 +14,7 @@ import com.example.pasa_la_pagina.DTOs.requests.DeletePublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
-import com.example.pasa_la_pagina.DTOs.response.PageRecuperarPublicacionResponse;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.entities.Apunte;
 import com.example.pasa_la_pagina.entities.Autor;
@@ -113,9 +113,9 @@ public class PublicacionService {
         return response;
     }
 
-    private PageRecuperarPublicacionResponse mapToResponsePageRecuperarPublicacion(
+    private PageRecuperarResponse mapToResponsePageRecuperarPublicacion(
             Page<RecuperarPublicacionResponse> page_publicaciones) {
-        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        PageRecuperarResponse response = new PageRecuperarResponse();
         response.setContent(page_publicaciones.getContent());
         response.setSize(page_publicaciones.getSize());
         response.setTotalElements(page_publicaciones.getTotalElements());
@@ -352,7 +352,7 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public PageRecuperarPublicacionResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable) {
+    public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable) {
         if (request == null)
             return mapToResponsePageRecuperarPublicacion(
                     publicacionRepository.findAllDisponibles(pageable).map(this::mapToResponseRecuperarPublicacion));
@@ -409,12 +409,12 @@ public class PublicacionService {
         return mapToResponsePageRecuperarPublicacion(response);
     }
 
-    public PageRecuperarPublicacionResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud,
+    public PageRecuperarResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud,
             Double usuario_latitud) {
         Page<RecuperarPublicacionResponse> publicaciones = publicacionRepository
                 .findAllDisponiblesOrderByDistance(usuario_latitud, usuario_longitud, pageable)
                 .map(this::mapToResponseRecuperarPublicacion);
-        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        PageRecuperarResponse response = new PageRecuperarResponse();
         response.setContent(publicaciones.getContent());
         response.setSize(publicaciones.getSize());
         response.setTotalElements(publicaciones.getTotalElements());
@@ -440,7 +440,7 @@ public class PublicacionService {
         publicacionRepository.save(publicacion);
     }
 
-    public PageRecuperarPublicacionResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
+    public PageRecuperarResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
         return mapToResponsePageRecuperarPublicacion(
                 publicacionRepository.findAllDisponiblesByUsuarioId(usuario_id, pageable)
                         .map(this::mapToResponseRecuperarPublicacion));

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.pasa_la_pagina.DTOs.chat.ChatMessageRequest;
 import com.example.pasa_la_pagina.DTOs.chat.ChatMessageResponse;
-import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.services.ChatService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,19 +50,6 @@ public class ChatController {
         @RequestParam(defaultValue = "50") int size
     ) {
         return ResponseEntity.ok(chatService.getMessages(chatId, page, size));
-    }
-
-    @Operation(
-            summary = "Crear un nuevo chat",
-            description = "Crea un chat persistente utilizando el titulo proporcionado."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Chat creado correctamente"),
-            @ApiResponse(responseCode = "400", description = "Titulo invalido")
-    })
-    @PostMapping
-    public ResponseEntity<Chat> createChat(@RequestParam String title) {
-        return ResponseEntity.ok(chatService.createChat(title));
     }
 
     @Operation(

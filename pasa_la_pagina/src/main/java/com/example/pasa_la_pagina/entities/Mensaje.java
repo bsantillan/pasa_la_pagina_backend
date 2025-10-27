@@ -3,6 +3,7 @@ package com.example.pasa_la_pagina.entities;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.*;
 
 @Entity
@@ -30,4 +31,14 @@ public class Mensaje {
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "usuario_id", nullable = true, foreignKey = @ForeignKey(name = "fk_mensaje_usuario"))
     private Usuario usuario;
+
+    // Validación: el usuario debe ser solicitante o propietario del intercambio
+    @AssertTrue(message = "El usuario del mensaje debe ser solicitante o propietario del intercambio.")
+    private boolean isUsuarioValido() {
+        if (usuario == null || chat == null || chat.getIntercambio() == null) return true;
+        Long userId = usuario.getId();
+        Intercambio intercambio = chat.getIntercambio();
+        return userId.equals(intercambio.getSolicitante().getId()) 
+            || userId.equals(intercambio.getPropietario().getId());
+    }
 }

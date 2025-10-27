@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.chat.ChatMessageResponse;
 import com.example.pasa_la_pagina.entities.Chat;
-import com.example.pasa_la_pagina.exceptions.ChatDeshabilitadoException;
 import com.example.pasa_la_pagina.entities.Mensaje;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.repositories.ChatRepository;
@@ -29,10 +28,6 @@ public class ChatService {
     public ChatMessageResponse saveMessage(Long chatId, String senderEmail, String content) {
         Chat chat = chatRepository.findById(chatId)
             .orElseThrow(() -> new IllegalArgumentException("Chat no existe: " + chatId));
-
-        if (!chat.isActivo()) {
-            throw new ChatDeshabilitadoException(chatId);
-        }
 
         Usuario sender = usuarioRepository.findByEmail(senderEmail)
             .orElseThrow(() -> new IllegalArgumentException("Usuario no existe: " + senderEmail));
@@ -56,12 +51,8 @@ public class ChatService {
     }
 
     public Page<ChatMessageResponse> getMessages(Long chatId, int page, int size) {
-        Chat chat = chatRepository.findById(chatId)
+        chatRepository.findById(chatId)
             .orElseThrow(() -> new IllegalArgumentException("Chat no existe: " + chatId));
-
-        if (!chat.isActivo()) {
-            throw new ChatDeshabilitadoException(chatId);
-        }
 
         Page<Mensaje> mensajes = mensajeRepository.findByChatIdOrderByFechaInicioDesc(chatId, PageRequest.of(page, size));
         return new PageImpl<>(
@@ -76,11 +67,6 @@ public class ChatService {
             mensajes.getPageable(),
             mensajes.getTotalElements()
         );
-    }
-
-    public Chat createChat(String title) {
-        Chat chat = Chat.builder().titulo(title).build();
-        return chatRepository.save(chat);
     }
 }
 

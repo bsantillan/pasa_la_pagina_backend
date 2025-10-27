@@ -2,11 +2,16 @@ package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.pasa_la_pagina.DTOs.requests.SolicitarIntercambioRequest;
-import com.example.pasa_la_pagina.DTOs.response.IntercambioResponse;
+import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
+import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Intercambio;
 import com.example.pasa_la_pagina.entities.Publicacion;
@@ -15,7 +20,6 @@ import com.example.pasa_la_pagina.entities.Enum.EstadoIntercambio;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAceptableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAutorizadoException;
-import com.example.pasa_la_pagina.exceptions.IntercambioNoCancelableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoEncontradoException;
 import com.example.pasa_la_pagina.exceptions.PublicacionNoEncontradaException;
 import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
@@ -35,13 +39,42 @@ public class IntercambioService {
     private final PublicacionRepository publicacionRepository;
     private final ChatRepository chatRepository;
 
-    @Transactional
-    public IntercambioResponse solicitarIntercambio(SolicitarIntercambioRequest request, String solicitanteEmail) {
-        Usuario solicitante = usuarioRepository.findByEmail(solicitanteEmail)
-            .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + solicitanteEmail));
+    private PageRecuperarResponse mapToPageResponse(Page<?> pages) {
+        PageRecuperarResponse response = new PageRecuperarResponse();
+        response.setContent(pages.getContent());
+        response.setSize(pages.getSize());
+        response.setTotalElements(pages.getTotalElements());
+        response.setTotalPages(pages.getTotalPages());
+        return response;
+    }
 
-        Publicacion publicacion = publicacionRepository.findById(request.getPublicacionId())
-            .orElseThrow(() -> new PublicacionNoEncontradaException(request.getPublicacionId()));
+    private RecuperarIntercambioResponse mapToResponseRecuperarIntercambio(Intercambio intercambio, Long usuario_id) {
+        RecuperarIntercambioResponse response = new RecuperarIntercambioResponse();
+        if (intercambio.getSolicitante().getId().equals(usuario_id)) {
+            response.setRolUsuario("Solicitante");
+            response.setUsuario(
+                    intercambio.getPropietario().getApellido() + " " + intercambio.getPropietario().getNombre());
+        } else {
+            response.setRolUsuario("Propietario");
+            response.setUsuario(
+                    intercambio.getSolicitante().getApellido() + " " + intercambio.getSolicitante().getNombre());
+        }
+        response.setId(intercambio.getId());
+        response.setEstadoIntercambio(intercambio.getEstado());
+        response.setFechaInicio(intercambio.getFechaInicio());
+        response.setTituloPublicaicon(intercambio.getPublicacion().getMaterial().getTitulo());
+        response.setPropietarioConcreto(intercambio.getPropietarioConcreto());
+        response.setSolicitanteConcreto(intercambio.getSolicitanteConcreto());
+        return response;
+    }
+
+    @Transactional
+    public void solicitarIntercambio(Long publicacionId, String solicitanteEmail) {
+        Usuario solicitante = usuarioRepository.findByEmail(solicitanteEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + solicitanteEmail));
+
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new PublicacionNoEncontradaException(publicacionId));
 
         Usuario propietario = publicacion.getUsuario();
         if (propietario == null) {
@@ -52,97 +85,119 @@ public class IntercambioService {
             throw new IntercambioInvalidoException("No podes solicitar intercambio sobre tu propio material");
         }
 
-        Chat chat = Chat.builder()
-            .titulo("Intercambio publicacion " + publicacion.getId())
-            .build();
-        chat.setActivo(false);
-        chat = chatRepository.save(chat);
-
         Intercambio intercambio = Intercambio.builder()
-            .solicitante(solicitante)
-            .propietario(propietario)
-            .chat(chat)
-            .estado(EstadoIntercambio.PENDIENTE)
-            .build();
-
-        Intercambio guardado = intercambioRepository.save(intercambio);
-        return mapToResponse(guardado);
+                .publicacion(publicacion)
+                .solicitante(solicitante)
+                .propietario(propietario)
+                .build();
+        intercambioRepository.save(intercambio);
     }
 
     @Transactional
-    public IntercambioResponse aceptarIntercambio(Long intercambioId, String propietarioEmail) {
+    public void aceptarIntercambio(Long intercambioId, String propietarioEmail) {
         Intercambio intercambio = intercambioRepository.findById(intercambioId)
-            .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
-
-        Usuario propietario = usuarioRepository.findByEmail(propietarioEmail)
-            .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + propietarioEmail));
-
-        if (!intercambio.getPropietario().getId().equals(propietario.getId())) {
-            throw new IntercambioNoAutorizadoException();
-        }
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
 
         if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE) {
             throw new IntercambioNoAceptableException(intercambio.getEstado());
         }
 
-        Chat chat = intercambio.getChat();
-        if (chat == null) {
-            throw new IntercambioInvalidoException("El intercambio no posee un chat asociado");
-        }
-
-        if (chat.isActivo()) {
-            throw new IntercambioNoAceptableException("El intercambio ya se encuentra habilitado");
-        }
-
-        chat.setActivo(true);
-        intercambio.setFechaFin(null);
-
-        Intercambio actualizado = intercambioRepository.save(intercambio);
-        return mapToResponse(actualizado);
-    }
-
-    @Transactional
-    public IntercambioResponse cancelarIntercambio(Long intercambioId, String usuarioEmail) {
-        Intercambio intercambio = intercambioRepository.findById(intercambioId)
-            .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
-
-        Usuario actor = usuarioRepository.findByEmail(usuarioEmail)
-            .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
-
-        boolean esSolicitante = intercambio.getSolicitante().getId().equals(actor.getId());
-        boolean esPropietario = intercambio.getPropietario().getId().equals(actor.getId());
-
-        if (!esSolicitante && !esPropietario) {
+        if (!intercambio.getPropietario().getEmail().equals(propietarioEmail)) {
             throw new IntercambioNoAutorizadoException();
         }
 
-        if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE) {
-            throw new IntercambioNoCancelableException(intercambio.getEstado());
+        intercambio.setEstado(EstadoIntercambio.ACEPTADO);
+        intercambio.setChat(Chat.builder()
+                .titulo("Chat")
+                .build());
+        intercambioRepository.save(intercambio);
+    }
+
+    @Transactional
+    public void cancelarIntercambio(Long intercambioId, String usuarioEmail) {
+        Intercambio intercambio = intercambioRepository.findById(intercambioId)
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
+
+        if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE
+                || intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
+            throw new IntercambioNoAceptableException(intercambio.getEstado());
+        }
+
+        if (!intercambio.getPropietario().getEmail().equals(usuarioEmail)
+                || !intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
+            throw new IntercambioNoAutorizadoException();
+        }
+
+        if (intercambio.getEstado() == EstadoIntercambio.ACEPTADO) {
+            chatRepository.delete(intercambio.getChat());
         }
 
         intercambio.setEstado(EstadoIntercambio.CANCELADO);
         intercambio.setFechaFin(LocalDateTime.now());
 
-        Chat chat = intercambio.getChat();
-        if (chat != null && chat.isActivo()) {
-            chat.setActivo(false);
-        }
+        intercambio.setChat(null);
 
-        Intercambio actualizado = intercambioRepository.save(intercambio);
-        return mapToResponse(actualizado);
+        intercambioRepository.save(intercambio);
     }
 
-    private IntercambioResponse mapToResponse(Intercambio intercambio) {
-        Chat chat = intercambio.getChat();
-        return IntercambioResponse.builder()
-            .id(intercambio.getId())
-            .solicitanteId(intercambio.getSolicitante() != null ? intercambio.getSolicitante().getId() : null)
-            .propietarioId(intercambio.getPropietario() != null ? intercambio.getPropietario().getId() : null)
-            .chatId(chat != null ? chat.getId() : null)
-            .fechaInicio(intercambio.getFechaInicio())
-            .fechaFin(intercambio.getFechaFin())
-            .estado(intercambio.getEstado())
-            .chatActivo(chat != null && chat.isActivo())
-            .build();
+    @Transactional
+    public void concretarIntercambio(Long intercambioId, String usuarioEmail) {
+        Intercambio intercambio = intercambioRepository.findById(intercambioId)
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
+
+        if (!intercambio.getSolicitante().getEmail().equals(usuarioEmail)
+                && !intercambio.getPropietario().getEmail().equals(usuarioEmail)) {
+            throw new IntercambioNoAutorizadoException();
+        }
+
+        // Marcar que el usuario concreto el intercambio
+        if (intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
+            intercambio.setSolicitanteConcreto(true);
+        } else {
+            intercambio.setPropietarioConcreto(true);
+        }
+
+        // Si ambos concretaron, actualizar estado
+        if (intercambio.isConcretado()) {
+            intercambio.setEstado(EstadoIntercambio.CONCRETADO);
+        }
+
+        intercambioRepository.save(intercambio);
+    }
+
+    @Transactional
+    public PageRecuperarResponse buscarIntercambios(int page, int size, String email,
+            BuscarIntercambioRequest filtros) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + email));
+
+        Sort sort = Sort.unsorted();
+        if (filtros.getOrdenarPor() != null) {
+            Sort.Direction dir = filtros.isOrdenDescendente() ? Sort.Direction.DESC : Sort.Direction.ASC;
+            switch (filtros.getOrdenarPor()) {
+                case FECHA_INICIO:
+                    sort = Sort.by(dir, "fechaInicio");
+                    break;
+                case TITULO_PUBLICACION:
+                    sort = Sort.by(dir, "publicacion.material.titulo");
+                    break;
+                case ESTADO:
+                    sort = Sort.by(dir, "estado");
+                    break;
+            }
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Intercambio> intercambios = intercambioRepository.buscarIntercambiosConFiltros(
+                usuario.getId(),
+                filtros.getRolesUsuario(),
+                filtros.getEstadosIntercambio(),
+                filtros.getFechaInicio(),
+                filtros.getTituloPublicaicon(),
+                filtros.getUsuario(),
+                pageable);
+
+        return mapToPageResponse(intercambios.map(i -> mapToResponseRecuperarIntercambio(i, usuario.getId())));
     }
 }
