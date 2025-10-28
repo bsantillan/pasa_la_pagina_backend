@@ -33,15 +33,15 @@ public class IntercambioController {
 
     private final IntercambioService intercambioService;
 
-    @PostMapping("/solicitar/{publicacionId}")
+    @PostMapping("/solicitar/{id}")
     @Operation(summary = "Solicitar intercambio", description = "Registra una propuesta de intercambio. El chat queda deshabilitado hasta la aceptacion del propietario.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Intercambio creado"),
             @ApiResponse(responseCode = "400", description = "Solicitud invalida"),
             @ApiResponse(responseCode = "404", description = "Publicacion o usuario inexistente")
     })
-    public ResponseEntity<?> solicitar(@NotNull Long publicacionId, Principal principal) {
-        intercambioService.solicitarIntercambio(publicacionId, principal.getName());
+    public ResponseEntity<?> solicitar(@NotNull Long id, Principal principal) {
+        intercambioService.solicitarIntercambio(id, principal.getName());
         return ResponseEntity.ok("Intercambio solicitado correctamente.");
     }
 

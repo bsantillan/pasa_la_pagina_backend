@@ -60,6 +60,7 @@ public class IntercambioService {
                     intercambio.getSolicitante().getApellido() + " " + intercambio.getSolicitante().getNombre());
         }
         response.setId(intercambio.getId());
+        response.setChatId(intercambio.getChat().getId());
         response.setEstadoIntercambio(intercambio.getEstado());
         response.setFechaInicio(intercambio.getFechaInicio());
         response.setTituloPublicaicon(intercambio.getPublicacion().getMaterial().getTitulo());
