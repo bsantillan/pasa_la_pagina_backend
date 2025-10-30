@@ -384,21 +384,27 @@ public class PublicacionService {
         Boolean digital = request.getDigital();
         Double precio_minimo = request.getPrecio_minimo();
         Double precio_maximo = request.getPrecio_maximo();
+        Double usuarioLat = request.getUsuario_latitud();
+        Double usuarioLon = request.getUsuario_longitud();
+        Double distanciaMax = request.getDistancia_maxima();
+        if (distanciaMax != null && (usuarioLat == null || usuarioLon == null)) {
+            throw new IllegalArgumentException("Para filtrar por distancia, se deben proporcionar coordenadas del usuario");
+        }
         List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null
                 || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
         if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
             publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo, usuario.getId()));
+                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
             publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuario.getId()));
+                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
         } else {
             if (request.getTipos_material().contains(TipoMaterial.Libro)) {
                 publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, precio_minimo, precio_maximo, usuario.getId()));
+                        tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
             }
             if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
                 publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuario.getId()));
+                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
             }
         }
         // Paginar

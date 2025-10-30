@@ -39,7 +39,13 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "AND (:tiposOfertas IS NULL OR p.tipo_oferta IN :tiposOfertas) " +
                         "AND (:precioMinimo IS NULL OR p.precio >= :precioMinimo) " +
                         "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo) " +
-                        "AND p.disponible = true")
+                        "AND p.disponible = true " +
+                        "AND (:distanciaMax IS NULL OR " +
+                        "     (6371 * acos( " +
+                        "         cos(radians(:usuarioLat)) * cos(radians(p.latitud)) * " +
+                        "         cos(radians(p.longitud) - radians(:usuarioLon)) + " +
+                        "         sin(radians(:usuarioLat)) * sin(radians(p.latitud))" +
+                        "     )) <= :distanciaMax)")
         List<Publicacion> buscarPorLibroDisponibles(
                         @Param("query") String query,
                         @Param("nuevo") Boolean nuevo,
@@ -48,6 +54,9 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         @Param("tiposOfertas") List<TipoOferta> tiposOfertas,
                         @Param("precioMinimo") Double precioMinimo,
                         @Param("precioMaximo") Double precioMaximo,
+                        @Param("usuarioLat") Double usuarioLat,
+                        @Param("usuarioLon") Double usuarioLon,
+                        @Param("distanciaMax") Double distanciaMax,
                         @Param("usuarioId") Long usuarioId);
 
         @Query("SELECT DISTINCT p FROM Publicacion p " +
@@ -76,7 +85,13 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "AND (:tiposOfertas IS NULL OR p.tipo_oferta IN :tiposOfertas) " +
                         "AND (:precioMinimo IS NULL OR p.precio >= :precioMinimo) " +
                         "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo) " +
-                        "AND p.disponible = true")
+                        "AND p.disponible = true " +
+                        "AND (:distanciaMax IS NULL OR " +
+                        "     (6371 * acos( " +
+                        "         cos(radians(:usuarioLat)) * cos(radians(p.latitud)) * " +
+                        "         cos(radians(p.longitud) - radians(:usuarioLon)) + " +
+                        "         sin(radians(:usuarioLat)) * sin(radians(p.latitud))" +
+                        "     )) <= :distanciaMax)")
         List<Publicacion> buscarPorApunteDisponibles(
                         @Param("query") String query,
                         @Param("nuevo") Boolean nuevo,
@@ -86,6 +101,9 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         @Param("nivelesEducativos") List<NivelEducativo> nivelesEducativos,
                         @Param("precioMinimo") Double precioMinimo,
                         @Param("precioMaximo") Double precioMaximo,
+                        @Param("usuarioLat") Double usuarioLat,
+                        @Param("usuarioLon") Double usuarioLon,
+                        @Param("distanciaMax") Double distanciaMax,
                         @Param("usuarioId") Long usuarioId);
 
         @Query("SELECT p FROM Publicacion p " +

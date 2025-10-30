@@ -22,4 +22,8 @@ public class BuscarPublicacionRequest {
     private List<TipoMaterial> tipos_material;
     private List<NivelEducativo> niveles_educativos;
 
+    private Double usuario_latitud;
+    private Double usuario_longitud;
+    private Double distancia_maxima;
+
 }
