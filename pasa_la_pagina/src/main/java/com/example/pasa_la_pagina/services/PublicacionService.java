@@ -32,6 +32,7 @@ import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.NivelEducativo;
 import com.example.pasa_la_pagina.entities.Enum.TipoMaterial;
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
+import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.AutorRepository;
 import com.example.pasa_la_pagina.repositories.CarreraRepository;
 import com.example.pasa_la_pagina.repositories.EditorialRepository;
@@ -352,10 +353,12 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable) {
+    public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         if (request == null)
             return mapToResponsePageRecuperarPublicacion(
-                    publicacionRepository.findAllDisponibles(pageable).map(this::mapToResponseRecuperarPublicacion));
+                    publicacionRepository.findAllDisponibles(pageable, usuario.getId()).map(this::mapToResponseRecuperarPublicacion));
 
         if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null)
                 && request.getTipos_oferta() == null) {
@@ -385,17 +388,17 @@ public class PublicacionService {
                 || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
         if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
             publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo));
+                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo, usuario.getId()));
             publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo));
+                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuario.getId()));
         } else {
             if (request.getTipos_material().contains(TipoMaterial.Libro)) {
                 publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, precio_minimo, precio_maximo));
+                        tipos_ofertas, precio_minimo, precio_maximo, usuario.getId()));
             }
             if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
                 publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo));
+                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuario.getId()));
             }
         }
         // Paginar
@@ -410,9 +413,11 @@ public class PublicacionService {
     }
 
     public PageRecuperarResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud,
-            Double usuario_latitud) {
+            Double usuario_latitud, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         Page<RecuperarPublicacionResponse> publicaciones = publicacionRepository
-                .findAllDisponiblesOrderByDistance(usuario_latitud, usuario_longitud, pageable)
+                .findAllDisponiblesOrderByDistance(usuario_latitud, usuario_longitud, pageable, usuario.getId())
                 .map(this::mapToResponseRecuperarPublicacion);
         PageRecuperarResponse response = new PageRecuperarResponse();
         response.setContent(publicaciones.getContent());

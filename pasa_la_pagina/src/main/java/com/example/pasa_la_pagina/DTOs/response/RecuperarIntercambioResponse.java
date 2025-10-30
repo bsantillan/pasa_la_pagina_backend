@@ -16,5 +16,6 @@ public class RecuperarIntercambioResponse {
     private LocalDateTime fechaInicio;
     private String tituloPublicaicon;
     private String usuario;
+    private String usuarioEmail;
     private Long chatId;
 }

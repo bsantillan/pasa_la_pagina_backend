@@ -10,12 +10,11 @@ import lombok.Data;
 
 @Data
 public class BuscarIntercambioRequest {
-    private List<String> rolesUsuario;
     private List<EstadoIntercambio> estadosIntercambio;
     private LocalDateTime fechaInicio;
-    private String tituloPublicaicon;
+    private String tituloPublicacion;
     private String usuario;
 
     private IntercambioOrden ordenarPor; 
-    private boolean ordenDescendente; 
+    private Boolean ordenDescendente; 
 }

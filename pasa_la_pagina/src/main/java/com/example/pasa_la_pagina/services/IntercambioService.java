@@ -1,6 +1,7 @@
 package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,13 +55,22 @@ public class IntercambioService {
             response.setRolUsuario("Solicitante");
             response.setUsuario(
                     intercambio.getPropietario().getApellido() + " " + intercambio.getPropietario().getNombre());
+            response.setUsuarioEmail(intercambio.getPropietario().getEmail());
+
         } else {
             response.setRolUsuario("Propietario");
             response.setUsuario(
                     intercambio.getSolicitante().getApellido() + " " + intercambio.getSolicitante().getNombre());
+            response.setUsuarioEmail(intercambio.getSolicitante().getEmail());
         }
         response.setId(intercambio.getId());
-        response.setChatId(intercambio.getChat().getId());
+
+        if (intercambio.getChat() != null) {
+            response.setChatId(intercambio.getChat().getId());
+        } else {
+            response.setChatId(null); // o podés omitirlo si el DTO permite null
+        }
+
         response.setEstadoIntercambio(intercambio.getEstado());
         response.setFechaInicio(intercambio.getFechaInicio());
         response.setTituloPublicaicon(intercambio.getPublicacion().getMaterial().getTitulo());
@@ -85,6 +95,12 @@ public class IntercambioService {
         if (propietario.getId().equals(solicitante.getId())) {
             throw new IntercambioInvalidoException("No podes solicitar intercambio sobre tu propio material");
         }
+
+        intercambioRepository.findByPublicacion_IdAndSolicitante_Id(publicacionId, solicitante.getId())
+                .ifPresent(i -> {
+                    throw new IntercambioInvalidoException(
+                            "Ya existe un intercambio solicitado por este usuario para esta publicación");
+                });
 
         Intercambio intercambio = Intercambio.builder()
                 .publicacion(publicacion)
@@ -120,12 +136,12 @@ public class IntercambioService {
                 .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
 
         if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE
-                || intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
+                && intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
             throw new IntercambioNoAceptableException(intercambio.getEstado());
         }
 
         if (!intercambio.getPropietario().getEmail().equals(usuarioEmail)
-                || !intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
+                && !intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
             throw new IntercambioNoAutorizadoException();
         }
 
@@ -172,9 +188,17 @@ public class IntercambioService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + email));
 
-        Sort sort = Sort.unsorted();
-        if (filtros.getOrdenarPor() != null) {
-            Sort.Direction dir = filtros.isOrdenDescendente() ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort sort = Sort.by(Sort.Direction.DESC, "fechaInicio");
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        if (filtros == null) {
+            return mapToPageResponse(intercambioRepository.buscarTodosIntercambios(pageable, usuario.getId())
+                    .map(i -> mapToResponseRecuperarIntercambio(i, usuario.getId())));
+        }
+
+        if (filtros.getOrdenDescendente() != null && filtros.getOrdenarPor() != null) {
+            Sort.Direction dir = filtros.getOrdenDescendente() ? Sort.Direction.DESC : Sort.Direction.ASC;
             switch (filtros.getOrdenarPor()) {
                 case FECHA_INICIO:
                     sort = Sort.by(dir, "fechaInicio");
@@ -188,14 +212,16 @@ public class IntercambioService {
             }
         }
 
-        Pageable pageable = PageRequest.of(page, size, sort);
+        List<EstadoIntercambio> estados = (filtros.getEstadosIntercambio() == null
+                || filtros.getEstadosIntercambio().isEmpty())
+                        ? null
+                        : filtros.getEstadosIntercambio();
 
         Page<Intercambio> intercambios = intercambioRepository.buscarIntercambiosConFiltros(
                 usuario.getId(),
-                filtros.getRolesUsuario(),
-                filtros.getEstadosIntercambio(),
+                estados,
                 filtros.getFechaInicio(),
-                filtros.getTituloPublicaicon(),
+                filtros.getTituloPublicacion(),
                 filtros.getUsuario(),
                 pageable);
 

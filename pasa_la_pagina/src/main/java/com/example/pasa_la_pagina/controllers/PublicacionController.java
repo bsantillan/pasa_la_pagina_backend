@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.controllers;
 
+import java.security.Principal;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -54,9 +56,10 @@ public class PublicacionController {
     public ResponseEntity<PageRecuperarResponse> buscarPublicaciones(
             @Valid @RequestBody(required = false) BuscarPublicacionRequest request,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(publicacionService.buscarPublicaciones(request, pageable));
+        return ResponseEntity.ok(publicacionService.buscarPublicaciones(request, pageable, principal.getName()));
     }
 
     @GetMapping("/paginado")
@@ -64,9 +67,10 @@ public class PublicacionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam Double usuario_latitud,
-            @RequestParam Double usuario_longitud) {
+            @RequestParam Double usuario_longitud,
+            Principal principal) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(publicacionService.recuperarPublicaciones(pageable,usuario_latitud,usuario_longitud));
+        return ResponseEntity.ok(publicacionService.recuperarPublicaciones(pageable,usuario_latitud,usuario_longitud,principal.getName()));
     }
 
     @GetMapping("/{id}")
