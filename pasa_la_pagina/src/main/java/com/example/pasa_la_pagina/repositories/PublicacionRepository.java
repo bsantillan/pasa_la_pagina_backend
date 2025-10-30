@@ -84,8 +84,6 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         @Param("precioMinimo") Double precioMinimo,
                         @Param("precioMaximo") Double precioMaximo);
 
-        @Query("SELECT p FROM Publicacion p " +
-                        "WHERE p.disponible = true ")
         Page<Publicacion> findAllDisponiblesByUsuarioId(Long usuarioId, Pageable pageable);
 
         @Query("SELECT p FROM Publicacion p " +
