@@ -24,6 +24,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "LEFT JOIN l.autor a " +
                         "LEFT JOIN l.editorial e " +
                         "WHERE TYPE(m) = Libro " +
+                        "AND p.usuario.id <> :usuarioId " +
                         "AND (:query IS NULL OR " +
                         "     LOWER(m.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
                         "  OR LOWER(m.descripcion) LIKE LOWER(CONCAT('%', :query, '%')) " +
@@ -38,7 +39,13 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "AND (:tiposOfertas IS NULL OR p.tipo_oferta IN :tiposOfertas) " +
                         "AND (:precioMinimo IS NULL OR p.precio >= :precioMinimo) " +
                         "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo) " +
-                        "AND p.disponible = true")
+                        "AND p.disponible = true " +
+                        "AND (:distanciaMax IS NULL OR " +
+                        "     (6371 * acos( " +
+                        "         cos(radians(:usuarioLat)) * cos(radians(p.latitud)) * " +
+                        "         cos(radians(p.longitud) - radians(:usuarioLon)) + " +
+                        "         sin(radians(:usuarioLat)) * sin(radians(p.latitud))" +
+                        "     )) <= :distanciaMax)")
         List<Publicacion> buscarPorLibroDisponibles(
                         @Param("query") String query,
                         @Param("nuevo") Boolean nuevo,
@@ -46,7 +53,11 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         @Param("idiomas") List<String> idiomas,
                         @Param("tiposOfertas") List<TipoOferta> tiposOfertas,
                         @Param("precioMinimo") Double precioMinimo,
-                        @Param("precioMaximo") Double precioMaximo);
+                        @Param("precioMaximo") Double precioMaximo,
+                        @Param("usuarioLat") Double usuarioLat,
+                        @Param("usuarioLon") Double usuarioLon,
+                        @Param("distanciaMax") Double distanciaMax,
+                        @Param("usuarioId") Long usuarioId);
 
         @Query("SELECT DISTINCT p FROM Publicacion p " +
                         "JOIN FETCH p.material m " +
@@ -58,6 +69,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "LEFT JOIN a.seccion sec " +
                         "LEFT JOIN a.carrera car " +
                         "WHERE TYPE(m) = Apunte " +
+                        "AND p.usuario.id <> :usuarioId " +
                         "AND (:query IS NULL OR " +
                         "     LOWER(m.titulo) LIKE LOWER(CONCAT('%', :query, '%')) " +
                         "  OR LOWER(m.descripcion) LIKE LOWER(CONCAT('%', :query, '%')) " +
@@ -73,7 +85,13 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         "AND (:tiposOfertas IS NULL OR p.tipo_oferta IN :tiposOfertas) " +
                         "AND (:precioMinimo IS NULL OR p.precio >= :precioMinimo) " +
                         "AND (:precioMaximo IS NULL OR p.precio <= :precioMaximo) " +
-                        "AND p.disponible = true")
+                        "AND p.disponible = true " +
+                        "AND (:distanciaMax IS NULL OR " +
+                        "     (6371 * acos( " +
+                        "         cos(radians(:usuarioLat)) * cos(radians(p.latitud)) * " +
+                        "         cos(radians(p.longitud) - radians(:usuarioLon)) + " +
+                        "         sin(radians(:usuarioLat)) * sin(radians(p.latitud))" +
+                        "     )) <= :distanciaMax)")
         List<Publicacion> buscarPorApunteDisponibles(
                         @Param("query") String query,
                         @Param("nuevo") Boolean nuevo,
@@ -82,15 +100,18 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         @Param("tiposOfertas") List<TipoOferta> tiposOfertas,
                         @Param("nivelesEducativos") List<NivelEducativo> nivelesEducativos,
                         @Param("precioMinimo") Double precioMinimo,
-                        @Param("precioMaximo") Double precioMaximo);
+                        @Param("precioMaximo") Double precioMaximo,
+                        @Param("usuarioLat") Double usuarioLat,
+                        @Param("usuarioLon") Double usuarioLon,
+                        @Param("distanciaMax") Double distanciaMax,
+                        @Param("usuarioId") Long usuarioId);
 
-        @Query("SELECT p FROM Publicacion p " +
-                        "WHERE p.disponible = true ")
         Page<Publicacion> findAllDisponiblesByUsuarioId(Long usuarioId, Pageable pageable);
 
         @Query("SELECT p FROM Publicacion p " +
-                        "WHERE p.disponible = true ")
-        Page<Publicacion> findAllDisponibles(Pageable pageable);
+                        "WHERE p.disponible = true " +
+                        "AND p.usuario.id <> :usuarioId ")
+        Page<Publicacion> findAllDisponibles(Pageable pageable, @Param("usuarioId") Long usuarioId);
 
         @Query("SELECT p FROM Publicacion p " +
                         "WHERE p.disponible = true " +
@@ -99,6 +120,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
 
         @Query("SELECT p FROM Publicacion p " +
                         "WHERE p.disponible = true " +
+                        "AND p.usuario.id <> :usuarioId " +
                         "ORDER BY (6371 * acos( " +
                         "cos(radians(:usuarioLatitud)) * cos(radians(p.latitud)) * " +
                         "cos(radians(p.longitud) - radians(:usuarioLongitud)) + " +
@@ -107,6 +129,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
         Page<Publicacion> findAllDisponiblesOrderByDistance(
                         @Param("usuarioLatitud") Double usuarioLatitud,
                         @Param("usuarioLongitud") Double usuarioLongitud,
-                        Pageable pageable);
+                        Pageable pageable,
+                        @Param("usuarioId") Long usuarioId);
 
 }

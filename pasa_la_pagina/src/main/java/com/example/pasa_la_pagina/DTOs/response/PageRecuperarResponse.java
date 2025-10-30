@@ -5,8 +5,8 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-public class PageRecuperarPublicacionResponse {
-    private List<RecuperarPublicacionResponse> content;
+public class PageRecuperarResponse {
+    private List<?> content;
     private int page;
     private int size;
     private long totalElements;

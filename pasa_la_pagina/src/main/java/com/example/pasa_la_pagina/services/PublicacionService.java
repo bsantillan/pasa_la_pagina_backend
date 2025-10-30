@@ -14,7 +14,7 @@ import com.example.pasa_la_pagina.DTOs.requests.DeletePublicacionRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionApunteRequest;
 import com.example.pasa_la_pagina.DTOs.requests.PublicacionLibroRequest;
 import com.example.pasa_la_pagina.DTOs.requests.UpdatePublicacionRequest;
-import com.example.pasa_la_pagina.DTOs.response.PageRecuperarPublicacionResponse;
+import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarPublicacionResponse;
 import com.example.pasa_la_pagina.entities.Apunte;
 import com.example.pasa_la_pagina.entities.Autor;
@@ -32,6 +32,7 @@ import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.NivelEducativo;
 import com.example.pasa_la_pagina.entities.Enum.TipoMaterial;
 import com.example.pasa_la_pagina.entities.Enum.TipoOferta;
+import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.AutorRepository;
 import com.example.pasa_la_pagina.repositories.CarreraRepository;
 import com.example.pasa_la_pagina.repositories.EditorialRepository;
@@ -113,9 +114,9 @@ public class PublicacionService {
         return response;
     }
 
-    private PageRecuperarPublicacionResponse mapToResponsePageRecuperarPublicacion(
+    private PageRecuperarResponse mapToResponsePageRecuperarPublicacion(
             Page<RecuperarPublicacionResponse> page_publicaciones) {
-        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        PageRecuperarResponse response = new PageRecuperarResponse();
         response.setContent(page_publicaciones.getContent());
         response.setSize(page_publicaciones.getSize());
         response.setTotalElements(page_publicaciones.getTotalElements());
@@ -352,10 +353,12 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public PageRecuperarPublicacionResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable) {
+    public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         if (request == null)
             return mapToResponsePageRecuperarPublicacion(
-                    publicacionRepository.findAllDisponibles(pageable).map(this::mapToResponseRecuperarPublicacion));
+                    publicacionRepository.findAllDisponibles(pageable, usuario.getId()).map(this::mapToResponseRecuperarPublicacion));
 
         if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null)
                 && request.getTipos_oferta() == null) {
@@ -381,21 +384,27 @@ public class PublicacionService {
         Boolean digital = request.getDigital();
         Double precio_minimo = request.getPrecio_minimo();
         Double precio_maximo = request.getPrecio_maximo();
+        Double usuarioLat = request.getUsuario_latitud();
+        Double usuarioLon = request.getUsuario_longitud();
+        Double distanciaMax = request.getDistancia_maxima();
+        if (distanciaMax != null && (usuarioLat == null || usuarioLon == null)) {
+            throw new IllegalArgumentException("Para filtrar por distancia, se deben proporcionar coordenadas del usuario");
+        }
         List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null
                 || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
         if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
             publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo));
+                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
             publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo));
+                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
         } else {
             if (request.getTipos_material().contains(TipoMaterial.Libro)) {
                 publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, precio_minimo, precio_maximo));
+                        tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
             }
             if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
                 publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo));
+                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
             }
         }
         // Paginar
@@ -409,12 +418,14 @@ public class PublicacionService {
         return mapToResponsePageRecuperarPublicacion(response);
     }
 
-    public PageRecuperarPublicacionResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud,
-            Double usuario_latitud) {
+    public PageRecuperarResponse recuperarPublicaciones(Pageable pageable, Double usuario_longitud,
+            Double usuario_latitud, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         Page<RecuperarPublicacionResponse> publicaciones = publicacionRepository
-                .findAllDisponiblesOrderByDistance(usuario_latitud, usuario_longitud, pageable)
+                .findAllDisponiblesOrderByDistance(usuario_latitud, usuario_longitud, pageable, usuario.getId())
                 .map(this::mapToResponseRecuperarPublicacion);
-        PageRecuperarPublicacionResponse response = new PageRecuperarPublicacionResponse();
+        PageRecuperarResponse response = new PageRecuperarResponse();
         response.setContent(publicaciones.getContent());
         response.setSize(publicaciones.getSize());
         response.setTotalElements(publicaciones.getTotalElements());
@@ -440,7 +451,7 @@ public class PublicacionService {
         publicacionRepository.save(publicacion);
     }
 
-    public PageRecuperarPublicacionResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
+    public PageRecuperarResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
         return mapToResponsePageRecuperarPublicacion(
                 publicacionRepository.findAllDisponiblesByUsuarioId(usuario_id, pageable)
                         .map(this::mapToResponseRecuperarPublicacion));
