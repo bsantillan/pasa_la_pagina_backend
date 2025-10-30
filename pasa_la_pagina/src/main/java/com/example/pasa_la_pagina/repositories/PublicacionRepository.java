@@ -106,8 +106,6 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                         @Param("distanciaMax") Double distanciaMax,
                         @Param("usuarioId") Long usuarioId);
 
-        @Query("SELECT p FROM Publicacion p " +
-                        "WHERE p.disponible = true ")
         Page<Publicacion> findAllDisponiblesByUsuarioId(Long usuarioId, Pageable pageable);
 
         @Query("SELECT p FROM Publicacion p " +
