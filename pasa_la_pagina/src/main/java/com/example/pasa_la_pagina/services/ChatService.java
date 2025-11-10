@@ -13,6 +13,7 @@ import com.example.pasa_la_pagina.DTOs.response.MensajeResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Mensaje;
 import com.example.pasa_la_pagina.entities.Usuario;
+import com.example.pasa_la_pagina.entities.Enum.TitulosNotificaciones;
 import com.example.pasa_la_pagina.repositories.ChatRepository;
 import com.example.pasa_la_pagina.repositories.MensajeRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
@@ -27,6 +28,7 @@ public class ChatService {
         private final MensajeRepository mensajeRepository;
         private final UsuarioRepository usuarioRepository;
         private final SimpMessagingTemplate messagingTemplate;
+        private final NotificacionService notificacionService;
 
         @Transactional
         public MensajeResponse guardarMensaje(ChatMessage chatMessage, String usuarioEmail) {
@@ -44,6 +46,21 @@ public class ChatService {
                                 .build();
 
                 mensajeRepository.save(mensaje);
+
+                Usuario receptor;
+                if (chat.getIntercambio().getPropietario().getId().equals(usuario.getId())) {
+                        receptor = chat.getIntercambio().getSolicitante();
+                } else {
+                        receptor = chat.getIntercambio().getPropietario();
+                }
+                
+                notificacionService.enviarNotificacionAUsuario(
+                        TitulosNotificaciones.NUEVO_MENSAJE,
+                        usuario.getNombre(),
+                        usuario.getApellido(),
+                        chatMessage.getContent(),
+                        receptor.getId()
+                );
 
                 return new MensajeResponse(
                                 mensaje.getId(),
