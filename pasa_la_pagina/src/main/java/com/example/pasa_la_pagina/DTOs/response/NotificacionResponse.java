@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class NotificacionResponse {
     private TitulosNotificaciones titulo;          
-    private String nombreUsuario;
-    private String apellidoUsuario;
     private String mensaje;       
     private LocalDateTime fecha;
 }

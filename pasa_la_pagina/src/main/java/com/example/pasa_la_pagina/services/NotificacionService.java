@@ -16,11 +16,9 @@ public class NotificacionService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    public void enviarNotificacionAUsuario(TitulosNotificaciones titulo, String nombreUsuario, String apellidoUsuario, String mensaje, Long receptorId) {
+    public void enviarNotificacionAUsuario(TitulosNotificaciones titulo, String mensaje, Long receptorId) {
         NotificacionResponse notificacion = new NotificacionResponse(
                 titulo,
-                nombreUsuario,
-                apellidoUsuario,
                 mensaje,
                 LocalDateTime.now()
         );

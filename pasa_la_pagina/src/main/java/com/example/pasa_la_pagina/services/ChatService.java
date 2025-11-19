@@ -53,14 +53,15 @@ public class ChatService {
                 } else {
                         receptor = chat.getIntercambio().getPropietario();
                 }
-                
+
+                String mensajeNotificacion = "¡Hola " + receptor.getNombre() + "!\n"
+                                + usuario.getNombre() + " te ha enviado un nuevo mensaje:\n"
+                                + chatMessage.getContent();
+
                 notificacionService.enviarNotificacionAUsuario(
-                        TitulosNotificaciones.NUEVO_MENSAJE,
-                        usuario.getNombre(),
-                        usuario.getApellido(),
-                        chatMessage.getContent(),
-                        receptor.getId()
-                );
+                                TitulosNotificaciones.NUEVO_MENSAJE,
+                                mensajeNotificacion,
+                                receptor.getId());
 
                 return new MensajeResponse(
                                 mensaje.getId(),

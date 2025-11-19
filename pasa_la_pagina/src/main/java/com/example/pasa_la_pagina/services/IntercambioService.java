@@ -18,6 +18,7 @@ import com.example.pasa_la_pagina.entities.Intercambio;
 import com.example.pasa_la_pagina.entities.Publicacion;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.EstadoIntercambio;
+import com.example.pasa_la_pagina.entities.Enum.TitulosNotificaciones;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAceptableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAutorizadoException;
@@ -39,6 +40,7 @@ public class IntercambioService {
     private final UsuarioRepository usuarioRepository;
     private final PublicacionRepository publicacionRepository;
     private final ChatRepository chatRepository;
+    private final NotificacionService notificacionService;
 
     private PageRecuperarResponse mapToPageResponse(Page<?> pages) {
         PageRecuperarResponse response = new PageRecuperarResponse();
@@ -108,6 +110,14 @@ public class IntercambioService {
                 .propietario(propietario)
                 .build();
         intercambioRepository.save(intercambio);
+
+        String mensajeNotificacion = "¡Hola " + propietario.getNombre() + "!\n"
+                + solicitante.getNombre() + " quiere intercambiar contigo";
+
+        notificacionService.enviarNotificacionAUsuario(
+                TitulosNotificaciones.SOLICITUD_INTERCAMBIO,
+                mensajeNotificacion,
+                propietario.getId());
     }
 
     @Transactional
@@ -128,15 +138,26 @@ public class IntercambioService {
                 .titulo("Chat")
                 .build());
         intercambioRepository.save(intercambio);
+
+        String mensajeNotificacion = "¡Genial, " + intercambio.getSolicitante().getNombre() + "!\n"
+                + intercambio.getPropietario().getNombre() + " ha aceptado tu solicitud de intercambio.\\n" + //
+                "Prepárate para realizar el intercambio.";
+
+        notificacionService.enviarNotificacionAUsuario(
+                TitulosNotificaciones.INTERCAMBIO_ACEPTADO,
+                mensajeNotificacion,
+                intercambio.getSolicitante().getId());
     }
 
     @Transactional
     public void cancelarIntercambio(Long intercambioId, String usuarioEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
+
         Intercambio intercambio = intercambioRepository.findById(intercambioId)
                 .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
 
-        if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE
-                && intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
+        if (intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
             throw new IntercambioNoAceptableException(intercambio.getEstado());
         }
 
@@ -145,20 +166,76 @@ public class IntercambioService {
             throw new IntercambioNoAutorizadoException();
         }
 
-        if (intercambio.getEstado() == EstadoIntercambio.ACEPTADO) {
-            chatRepository.delete(intercambio.getChat());
-        }
+        Chat chat = intercambio.getChat();
+        intercambio.setChat(null); 
+        chatRepository.delete(chat);
 
         intercambio.setEstado(EstadoIntercambio.CANCELADO);
         intercambio.setFechaFin(LocalDateTime.now());
 
-        intercambio.setChat(null);
+        intercambioRepository.save(intercambio);
+
+        Usuario receptor;
+        if (intercambio.getPropietario().getId().equals(usuario.getId())) {
+            receptor = intercambio.getSolicitante();
+        } else {
+            receptor = intercambio.getPropietario();
+        }
+
+        String mensajeNotificacion = "Hola " + receptor.getNombre() + ", " + usuario.getNombre()
+                + " ha decidido cancelar el intercambio.\\n"
+                + "Puedes seguir explorando otras opciones disponibles.";
+
+        notificacionService.enviarNotificacionAUsuario(
+                TitulosNotificaciones.INTERCAMBIO_CANCELADO,
+                mensajeNotificacion,
+                receptor.getId());
+    }
+
+    @Transactional
+    public void rechazarIntercambio(Long intercambioId, String usuarioEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
+
+        Intercambio intercambio = intercambioRepository.findById(intercambioId)
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
+
+        if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE) {
+            throw new IntercambioNoAceptableException(intercambio.getEstado());
+        }
+
+        if (!intercambio.getPropietario().getEmail().equals(usuarioEmail)
+                && !intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
+            throw new IntercambioNoAutorizadoException();
+        }
+
+        intercambio.setEstado(EstadoIntercambio.RECHAZADO);
+        intercambio.setFechaFin(LocalDateTime.now());
 
         intercambioRepository.save(intercambio);
+
+        Usuario receptor;
+        if (intercambio.getPropietario().getId().equals(usuario.getId())) {
+            receptor = intercambio.getSolicitante();
+        } else {
+            receptor = intercambio.getPropietario();
+        }
+
+        String mensajeNotificacion = "Hola " + receptor.getNombre() + ", lamentablemente " + usuario.getNombre()
+                + " ha rechazado tu solicitud de intercambio.\\n" + //
+                "¡Sigue intentándolo, seguro encontrarás otro intercambio pronto!";
+
+        notificacionService.enviarNotificacionAUsuario(
+                TitulosNotificaciones.INTERCAMBIO_RECHAZADO,
+                mensajeNotificacion,
+                receptor.getId());
     }
 
     @Transactional
     public void concretarIntercambio(Long intercambioId, String usuarioEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
+
         Intercambio intercambio = intercambioRepository.findById(intercambioId)
                 .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
 
@@ -167,17 +244,28 @@ public class IntercambioService {
             throw new IntercambioNoAutorizadoException();
         }
 
-        // Marcar que el usuario concreto el intercambio
+        Usuario receptor;
         if (intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
             intercambio.setSolicitanteConcreto(true);
+            receptor = intercambio.getPropietario();
         } else {
             intercambio.setPropietarioConcreto(true);
+            receptor = intercambio.getSolicitante();
         }
 
-        // Si ambos concretaron, actualizar estado
         if (intercambio.isConcretado()) {
             intercambio.setEstado(EstadoIntercambio.CONCRETADO);
+            chatRepository.delete(intercambio.getChat());
         }
+
+        String mensajeNotificacion = "¡Hola " + receptor.getNombre() + "! " + usuario.getNombre()
+                + " confirmó que el intercambio se concretó.\\n"
+                + "¡Gracias por ser parte de la comunidad!";
+
+        notificacionService.enviarNotificacionAUsuario(
+                TitulosNotificaciones.INTERCAMBIO_CONCRETADO,
+                mensajeNotificacion,
+                receptor.getId());
 
         intercambioRepository.save(intercambio);
     }
