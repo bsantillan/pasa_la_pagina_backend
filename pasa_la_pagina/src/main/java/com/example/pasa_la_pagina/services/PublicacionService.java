@@ -353,12 +353,14 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable, String userEmail) {
+    public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable,
+            String userEmail) {
         Usuario usuario = usuarioRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         if (request == null)
             return mapToResponsePageRecuperarPublicacion(
-                    publicacionRepository.findAllDisponibles(pageable, usuario.getId()).map(this::mapToResponseRecuperarPublicacion));
+                    publicacionRepository.findAllDisponibles(pageable, usuario.getId())
+                            .map(this::mapToResponseRecuperarPublicacion));
 
         if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null)
                 && request.getTipos_oferta() == null) {
@@ -388,23 +390,28 @@ public class PublicacionService {
         Double usuarioLon = request.getUsuario_longitud();
         Double distanciaMax = request.getDistancia_maxima();
         if (distanciaMax != null && (usuarioLat == null || usuarioLon == null)) {
-            throw new IllegalArgumentException("Para filtrar por distancia, se deben proporcionar coordenadas del usuario");
+            throw new IllegalArgumentException(
+                    "Para filtrar por distancia, se deben proporcionar coordenadas del usuario");
         }
         List<NivelEducativo> niveles_educativos = (request.getNiveles_educativos() == null
                 || request.getNiveles_educativos().isEmpty()) ? null : request.getNiveles_educativos();
         if (request.getTipos_material() == null || request.getTipos_material().isEmpty()) {
             publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
+                    query, nuevo, digital, idiomas, tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon,
+                    distanciaMax, usuario.getId()));
             publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(
-                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
+                    query, nuevo, digital, idiomas, tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo,
+                    usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
         } else {
             if (request.getTipos_material().contains(TipoMaterial.Libro)) {
                 publicaciones.addAll(publicacionRepository.buscarPorLibroDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
+                        tipos_ofertas, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax,
+                        usuario.getId()));
             }
             if (request.getTipos_material().contains(TipoMaterial.Apunte)) {
                 publicaciones.addAll(publicacionRepository.buscarPorApunteDisponibles(query, nuevo, digital, idiomas,
-                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon, distanciaMax, usuario.getId()));
+                        tipos_ofertas, niveles_educativos, precio_minimo, precio_maximo, usuarioLat, usuarioLon,
+                        distanciaMax, usuario.getId()));
             }
         }
         // Paginar
@@ -440,12 +447,15 @@ public class PublicacionService {
         return mapToResponseRecuperarPublicacion(publicacion);
     }
 
-    public void eliminarPublicacionById(DeletePublicacionRequest request) {
+    public void eliminarPublicacionById(DeletePublicacionRequest request, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException(
+                        "Usuario no encontrado: " + userEmail));
         Publicacion publicacion = publicacionRepository.findById(request.getId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No se encontro una publicacion con el id: " + request.getId()));
-        if (publicacion.getUsuario().getId() != request.getUsuarioId()) {
-            throw new IllegalArgumentException("La publicacion no es del usuario con id: " + request.getUsuarioId());
+        if (publicacion.getUsuario().getId() != usuario.getId()) {
+            throw new IllegalArgumentException("La publicacion no es del usuario con id: " + usuario.getId());
         }
         publicacion.setDisponible(false);
         publicacionRepository.save(publicacion);

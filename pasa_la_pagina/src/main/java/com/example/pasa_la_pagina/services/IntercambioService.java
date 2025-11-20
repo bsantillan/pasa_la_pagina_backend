@@ -15,10 +15,11 @@ import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Intercambio;
+import com.example.pasa_la_pagina.entities.Notificacion;
 import com.example.pasa_la_pagina.entities.Publicacion;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.EstadoIntercambio;
-import com.example.pasa_la_pagina.entities.Enum.TitulosNotificaciones;
+import com.example.pasa_la_pagina.entities.Enum.TipoNotificacion;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAceptableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAutorizadoException;
@@ -111,13 +112,16 @@ public class IntercambioService {
                 .build();
         intercambioRepository.save(intercambio);
 
-        String mensajeNotificacion = "¡Hola " + propietario.getNombre() + "!\n"
-                + solicitante.getNombre() + " quiere intercambiar contigo";
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.SOLICITUD_INTERCAMBIO,
+                intercambio,
+                null,
+                null,
+                propietario,
+                solicitante
+            );
 
-        notificacionService.enviarNotificacionAUsuario(
-                TitulosNotificaciones.SOLICITUD_INTERCAMBIO,
-                mensajeNotificacion,
-                propietario.getId());
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
     }
 
     @Transactional
@@ -137,16 +141,19 @@ public class IntercambioService {
         intercambio.setChat(Chat.builder()
                 .titulo("Chat")
                 .build());
+
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_ACEPTADO,
+                intercambio,
+                null,
+                null,
+                intercambio.getSolicitante(),
+                intercambio.getPropietario()
+            );
+
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
+
         intercambioRepository.save(intercambio);
-
-        String mensajeNotificacion = "¡Genial, " + intercambio.getSolicitante().getNombre() + "!\n"
-                + intercambio.getPropietario().getNombre() + " ha aceptado tu solicitud de intercambio.\\n" + //
-                "Prepárate para realizar el intercambio.";
-
-        notificacionService.enviarNotificacionAUsuario(
-                TitulosNotificaciones.INTERCAMBIO_ACEPTADO,
-                mensajeNotificacion,
-                intercambio.getSolicitante().getId());
     }
 
     @Transactional
@@ -167,13 +174,11 @@ public class IntercambioService {
         }
 
         Chat chat = intercambio.getChat();
-        intercambio.setChat(null); 
+        intercambio.setChat(null);
         chatRepository.delete(chat);
 
         intercambio.setEstado(EstadoIntercambio.CANCELADO);
         intercambio.setFechaFin(LocalDateTime.now());
-
-        intercambioRepository.save(intercambio);
 
         Usuario receptor;
         if (intercambio.getPropietario().getId().equals(usuario.getId())) {
@@ -182,14 +187,18 @@ public class IntercambioService {
             receptor = intercambio.getPropietario();
         }
 
-        String mensajeNotificacion = "Hola " + receptor.getNombre() + ", " + usuario.getNombre()
-                + " ha decidido cancelar el intercambio.\\n"
-                + "Puedes seguir explorando otras opciones disponibles.";
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_CANCELADO,
+                intercambio,
+                null,
+                null,
+                receptor,
+                usuario
+            );
 
-        notificacionService.enviarNotificacionAUsuario(
-                TitulosNotificaciones.INTERCAMBIO_CANCELADO,
-                mensajeNotificacion,
-                receptor.getId());
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
+
+        intercambioRepository.save(intercambio);
     }
 
     @Transactional
@@ -212,8 +221,6 @@ public class IntercambioService {
         intercambio.setEstado(EstadoIntercambio.RECHAZADO);
         intercambio.setFechaFin(LocalDateTime.now());
 
-        intercambioRepository.save(intercambio);
-
         Usuario receptor;
         if (intercambio.getPropietario().getId().equals(usuario.getId())) {
             receptor = intercambio.getSolicitante();
@@ -221,14 +228,18 @@ public class IntercambioService {
             receptor = intercambio.getPropietario();
         }
 
-        String mensajeNotificacion = "Hola " + receptor.getNombre() + ", lamentablemente " + usuario.getNombre()
-                + " ha rechazado tu solicitud de intercambio.\\n" + //
-                "¡Sigue intentándolo, seguro encontrarás otro intercambio pronto!";
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_RECHAZADO,
+                intercambio,
+                null,
+                null,
+                receptor,
+                usuario
+            );
 
-        notificacionService.enviarNotificacionAUsuario(
-                TitulosNotificaciones.INTERCAMBIO_RECHAZADO,
-                mensajeNotificacion,
-                receptor.getId());
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
+
+        intercambioRepository.save(intercambio);
     }
 
     @Transactional
@@ -258,14 +269,16 @@ public class IntercambioService {
             chatRepository.delete(intercambio.getChat());
         }
 
-        String mensajeNotificacion = "¡Hola " + receptor.getNombre() + "! " + usuario.getNombre()
-                + " confirmó que el intercambio se concretó.\\n"
-                + "¡Gracias por ser parte de la comunidad!";
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_CONCRETADO,
+                intercambio,
+                null,
+                null,
+                receptor,
+                usuario
+            );
 
-        notificacionService.enviarNotificacionAUsuario(
-                TitulosNotificaciones.INTERCAMBIO_CONCRETADO,
-                mensajeNotificacion,
-                receptor.getId());
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
 
         intercambioRepository.save(intercambio);
     }
