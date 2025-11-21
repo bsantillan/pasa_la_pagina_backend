@@ -18,12 +18,12 @@
             "mainClass": "com.example.pasa_la_pagina.PasaLaPaginaApplication",
             "projectName": "pasa_la_pagina",
             "env": {
-                "MYSQL_ROOT_PASSWORD": "root123",
-                "MYSQL_DATABASE": "pasa_la_pagina",
-                "MYSQL_USER": "bruno123",
-                "MYSQL_PASSWORD": "bruno123",
-                "JWT_SECRET": "67b4f9d7518ed3f5f7499aa2982565ca1ad9a2b2b99418e4a16b0a8301b1bbfd",
-                "GOOGLE_SECRET": "tu_google_secret"
+                "MYSQL_URL":"jdbc:mysql://ballast.proxy.rlwy.net:53472/railway",
+                "MYSQLDATABASE":"railway",
+                "MYSQLUSER":"root",
+                "MYSQLPASSWORD":"nxhMJTNHnufyObuMfnDBGUOZLqRllawF",
+                "JWT_SECRET":"67b4f9d7518ed3f5f7499aa2982565ca1ad9a2b2b99418e4a16b0a8301b1bbfd",
+                "GOOGLE_SECRET":"tu_google_secret"
             }
         }
     ]

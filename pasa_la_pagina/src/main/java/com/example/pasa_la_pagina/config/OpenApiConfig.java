@@ -1,4 +1,4 @@
-﻿package com.example.pasa_la_pagina.config;
+package com.example.pasa_la_pagina.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
