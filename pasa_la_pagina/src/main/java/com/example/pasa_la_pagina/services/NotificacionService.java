@@ -2,13 +2,10 @@ package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.requests.DeleteNotificacionRequest;
-import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarNotificacionResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Intercambio;
@@ -29,16 +26,6 @@ public class NotificacionService {
         private final SimpMessagingTemplate messagingTemplate;
         private final UsuarioRepository usuarioRepository;
         private final NotificacionRepository notificacionRepository;
-
-        private PageRecuperarResponse mapToResponsePageRecuperarNotificacion(
-                        Page<RecuperarNotificacionResponse> page_notificaciones) {
-                PageRecuperarResponse response = new PageRecuperarResponse();
-                response.setContent(page_notificaciones.getContent());
-                response.setSize(page_notificaciones.getSize());
-                response.setTotalElements(page_notificaciones.getTotalElements());
-                response.setTotalPages(page_notificaciones.getTotalPages());
-                return response;
-        }
 
         private RecuperarNotificacionResponse mapToResponseRecuperarNotificacion(Notificacion notificacion) {
                 RecuperarNotificacionResponse response = new RecuperarNotificacionResponse();
@@ -100,16 +87,6 @@ public class NotificacionService {
                         default:
                                 return "Tienes una nueva notificación.";
                 }
-        }
-
-        public PageRecuperarResponse obtenerNotificaciones(Pageable pageable, String userEmail) {
-                Usuario usuario = usuarioRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new UsuarioNoEncontradoException(
-                                                "Usuario no encontrado: " + userEmail));
-                return mapToResponsePageRecuperarNotificacion(
-                                notificacionRepository.findAllNotificaciones(pageable, usuario.getId())
-                                                .map(this::mapToResponseRecuperarNotificacion));
-
         }
 
         public void enviarNotificacionAUsuario(Notificacion notificacion) {
