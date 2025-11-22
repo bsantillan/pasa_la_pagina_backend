@@ -7,10 +7,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
+import com.example.pasa_la_pagina.DTOs.response.NotificacionUpdateResponse;
 import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
 import com.example.pasa_la_pagina.entities.Chat;
@@ -20,6 +22,7 @@ import com.example.pasa_la_pagina.entities.Publicacion;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.EstadoIntercambio;
 import com.example.pasa_la_pagina.entities.Enum.TipoNotificacion;
+import com.example.pasa_la_pagina.entities.Enum.TipoUpdateNotificacion;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAceptableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAutorizadoException;
@@ -28,6 +31,7 @@ import com.example.pasa_la_pagina.exceptions.PublicacionNoEncontradaException;
 import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.ChatRepository;
 import com.example.pasa_la_pagina.repositories.IntercambioRepository;
+import com.example.pasa_la_pagina.repositories.NotificacionRepository;
 import com.example.pasa_la_pagina.repositories.PublicacionRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 
@@ -42,6 +46,8 @@ public class IntercambioService {
     private final PublicacionRepository publicacionRepository;
     private final ChatRepository chatRepository;
     private final NotificacionService notificacionService;
+    private final NotificacionRepository notificacionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private PageRecuperarResponse mapToPageResponse(Page<?> pages) {
         PageRecuperarResponse response = new PageRecuperarResponse();
@@ -118,8 +124,7 @@ public class IntercambioService {
                 null,
                 null,
                 propietario,
-                solicitante
-            );
+                solicitante);
 
         notificacionService.enviarNotificacionAUsuario(notiificacion);
     }
@@ -148,8 +153,7 @@ public class IntercambioService {
                 null,
                 null,
                 intercambio.getSolicitante(),
-                intercambio.getPropietario()
-            );
+                intercambio.getPropietario());
 
         notificacionService.enviarNotificacionAUsuario(notiificacion);
 
@@ -193,8 +197,7 @@ public class IntercambioService {
                 null,
                 null,
                 receptor,
-                usuario
-            );
+                usuario);
 
         notificacionService.enviarNotificacionAUsuario(notiificacion);
 
@@ -234,8 +237,7 @@ public class IntercambioService {
                 null,
                 null,
                 receptor,
-                usuario
-            );
+                usuario);
 
         notificacionService.enviarNotificacionAUsuario(notiificacion);
 
@@ -275,8 +277,7 @@ public class IntercambioService {
                 null,
                 null,
                 receptor,
-                usuario
-            );
+                usuario);
 
         notificacionService.enviarNotificacionAUsuario(notiificacion);
 
@@ -325,6 +326,13 @@ public class IntercambioService {
                 filtros.getTituloPublicacion(),
                 filtros.getUsuario(),
                 pageable);
+
+        intercambios.forEach(intercambio -> notificacionRepository.deleteByReceptorIdAndIntercambioId(usuario.getId(),
+                intercambio.getId()));
+
+        messagingTemplate.convertAndSend(
+                "/topic/notificaciones/" + usuario.getId(),
+                new NotificacionUpdateResponse(TipoUpdateNotificacion.ACTUALIZAR_TODO, null));
 
         return mapToPageResponse(intercambios.map(i -> mapToResponseRecuperarIntercambio(i, usuario.getId())));
     }

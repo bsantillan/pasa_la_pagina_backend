@@ -12,7 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,23 +45,23 @@ public class Notificacion {
     @Column(name = "fecha_notificacion", nullable = false)
     private LocalDateTime fecha_notificacion;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "receptor_id", nullable = false)
     private Usuario receptor;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "emisor_id", nullable = false)
     private Usuario emisor;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "intercambio_id", nullable = true)
     private Intercambio intercambio;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "mensaje_id", nullable = true)
     private Mensaje Mensaje;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "chat_id", nullable = true)
     private Chat chat;
 }

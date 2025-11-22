@@ -35,8 +35,8 @@ public class ChatController {
             @ApiResponse(responseCode = "404", description = "Chat no encontrado")
     })
     @GetMapping("/chat/{chatId}/mensajes")
-    public ResponseEntity<List<MensajeResponse>> getMensajes(@PathVariable Long chatId) {
-        return ResponseEntity.ok(chatService.obtenerMensajes(chatId));
+    public ResponseEntity<List<MensajeResponse>> getMensajes(@PathVariable Long chatId, Principal principal) {
+        return ResponseEntity.ok(chatService.obtenerMensajes(chatId, principal.getName()));
     }
 
     @Operation(summary = "Obtener informacion del chat", description = "Recupera la infromacion de un chat identificado por su ID.")

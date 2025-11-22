@@ -1,11 +1,14 @@
 package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.example.pasa_la_pagina.DTOs.requests.DeleteNotificacionRequest;
+import com.example.pasa_la_pagina.DTOs.response.NotificacionUpdateResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarNotificacionResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Intercambio;
@@ -13,6 +16,7 @@ import com.example.pasa_la_pagina.entities.Mensaje;
 import com.example.pasa_la_pagina.entities.Notificacion;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.TipoNotificacion;
+import com.example.pasa_la_pagina.entities.Enum.TipoUpdateNotificacion;
 import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.NotificacionRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
@@ -142,5 +146,21 @@ public class NotificacionService {
                                         "La notificacion no es del usuario con id: " + usuario.getId());
                 }
                 notificacionRepository.delete(notificacion);
+
+                messagingTemplate.convertAndSend(
+                                "/topic/notificaciones/" + usuario.getId(),
+                                new NotificacionUpdateResponse(TipoUpdateNotificacion.ELIMINADA, notificacion.getId()));
+        }
+
+        public List<RecuperarNotificacionResponse> obtenerNotificaciones(String userEmail) {
+                Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                                .orElseThrow(() -> new UsuarioNoEncontradoException(
+                                                "Usuario no encontrado: " + userEmail));
+
+                List<Notificacion> notificaciones = notificacionRepository.findByReceptorId(usuario.getId());
+
+                return notificaciones.stream()
+                                .map(this::mapToResponseRecuperarNotificacion)
+                                .collect(Collectors.toList());
         }
 }

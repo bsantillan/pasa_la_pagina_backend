@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.repositories;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +15,10 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     @Query("SELECT n FROM Notificacion n " +
             "WHERE n.receptor.id = :usuarioId")
     Page<Notificacion> findAllNotificaciones(Pageable pageable, @Param("usuarioId") Long usuarioId);
+
+    void deleteByReceptorIdAndChatId(Long receptorId, Long chatId);
+
+    void deleteByReceptorIdAndIntercambioId(Long receptorId, Long intercambioId);
+
+    List<Notificacion> findByReceptorId(Long receptorId);
 }
