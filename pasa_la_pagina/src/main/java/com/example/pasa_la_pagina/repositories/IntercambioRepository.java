@@ -27,7 +27,7 @@ public interface IntercambioRepository extends JpaRepository<Intercambio, Long> 
             JOIN FETCH i.solicitante sol
             JOIN FETCH i.propietario prop
             WHERE
-                (i.propietario.id = :usuarioId AND (i.estado ='ACEPTADO' OR i.estado ='CONCRETADO')) OR (i.solicitante.id = :usuarioId AND (i.estado ='ACEPTADO' OR i.estado ='CONCRETADO') )
+                (i.propietario.id = :usuarioId OR i.solicitante.id = :usuarioId)
                 AND (:estados IS NULL OR i.estado IN :estados)
                 AND (:fechaInicio IS NULL OR i.fechaInicio >= :fechaInicio)
                 AND (:tituloPublicacion IS NULL OR LOWER(m.titulo) LIKE LOWER(CONCAT('%', :tituloPublicacion, '%')))

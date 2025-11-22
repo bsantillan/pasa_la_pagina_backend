@@ -1,5 +1,6 @@
 package com.example.pasa_la_pagina.controllers;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.pasa_la_pagina.DTOs.response.ChatResponse;
 import com.example.pasa_la_pagina.DTOs.response.MensajeResponse;
 import com.example.pasa_la_pagina.services.ChatService;
 
@@ -33,8 +35,17 @@ public class ChatController {
             @ApiResponse(responseCode = "404", description = "Chat no encontrado")
     })
     @GetMapping("/chat/{chatId}/mensajes")
-    public ResponseEntity<List<MensajeResponse>> getMensajes(@PathVariable Long chatId) {
-        return ResponseEntity.ok(chatService.obtenerMensajes(chatId));
+    public ResponseEntity<List<MensajeResponse>> getMensajes(@PathVariable Long chatId, Principal principal) {
+        return ResponseEntity.ok(chatService.obtenerMensajes(chatId, principal.getName()));
     }
 
+    @Operation(summary = "Obtener informacion del chat", description = "Recupera la infromacion de un chat identificado por su ID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Informacion del chat recuperada correctamente"),
+            @ApiResponse(responseCode = "404", description = "Chat no encontrado")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<ChatResponse> getChat(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(chatService.obtenerChat(id, principal.getName()));
+    }
 }
