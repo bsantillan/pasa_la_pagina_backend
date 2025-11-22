@@ -4,10 +4,10 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
-# Copiamos solo la carpeta del proyecto
+# Copiamos la carpeta del proyecto
 COPY pasa_la_pagina ./pasa_la_pagina
 
-# Vamos al directorio del proyecto
+# Entramos al directorio del proyecto
 WORKDIR /app/pasa_la_pagina
 
 # Damos permisos al Maven Wrapper
@@ -22,11 +22,11 @@ RUN ./mvnw -DskipTests clean package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copiamos el jar generado en la etapa de build
+# Copiamos el jar generado
 COPY --from=build /app/pasa_la_pagina/target/*.jar app.jar
 
-# Puerto en el que escucha Spring Boot
+# Exponemos el puerto (Railway asigna la variable PORT)
 EXPOSE 8080
 
-# Comando para iniciar el backend
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Ejecutamos Spring Boot usando el PORT de Railway
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=$PORT"]
