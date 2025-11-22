@@ -79,8 +79,8 @@ public class PublicacionController {
     }
 
     @DeleteMapping("/eliminar")
-    public ResponseEntity<Void> eliminarPublicacionById(@Valid @RequestBody DeletePublicacionRequest request) {
-        publicacionService.eliminarPublicacionById(request);
+    public ResponseEntity<Void> eliminarPublicacionById(@Valid @RequestBody DeletePublicacionRequest request, Principal principal) {
+        publicacionService.eliminarPublicacionById(request, principal.getName());
         return ResponseEntity.noContent().build();
     }
 
