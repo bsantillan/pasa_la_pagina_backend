@@ -4,6 +4,6 @@ public enum EstadoIntercambio {
     PENDIENTE,
     ACEPTADO,
     CANCELADO,
-    CONCRETADO, 
-    RECHAZADO
+    RECHAZADO,
+    CONCRETADO,
 }

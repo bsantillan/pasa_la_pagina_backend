@@ -27,7 +27,7 @@ public interface IntercambioRepository extends JpaRepository<Intercambio, Long> 
             JOIN FETCH i.solicitante sol
             JOIN FETCH i.propietario prop
             WHERE
-                (i.propietario.id = :usuarioId OR i.solicitante.id = :usuarioId)
+                (i.propietario.id = :usuarioId OR (i.solicitante.id = :usuarioId AND i.estado <> 'PENDIENTE'))
                 AND (:estados IS NULL OR i.estado IN :estados)
                 AND (:fechaInicio IS NULL OR i.fechaInicio >= :fechaInicio)
                 AND (:tituloPublicacion IS NULL OR LOWER(m.titulo) LIKE LOWER(CONCAT('%', :tituloPublicacion, '%')))
@@ -47,5 +47,13 @@ public interface IntercambioRepository extends JpaRepository<Intercambio, Long> 
     @Query("SELECT i FROM Intercambio i " +
             "WHERE i.propietario.id = :usuarioId ")
     Page<Intercambio> buscarTodosIntercambios(Pageable pageable, @Param("usuarioId") Long usuarioId);
+
+    List<Intercambio> findByEstado(EstadoIntercambio estado);
+
+    @Query("SELECT i FROM Intercambio i WHERE i.estado = :estado AND i.codigoValidacion IS NOT NULL")
+    List<Intercambio> findByEstadoAndCodigoValidacionIsNotNull(@Param("estado") EstadoIntercambio estado);
+    
+    @Query("SELECT i FROM Intercambio i WHERE i.solicitante.id = :usuarioId OR i.propietario.id = :usuarioId")
+    Page<Intercambio> findBySolicitanteIdOrPropietarioId(@Param("usuarioId") Long usuarioId, Pageable pageable);
 
 }

@@ -14,8 +14,9 @@ public interface ReseniaRepository extends JpaRepository<Resenia, Long> {
     @Query("SELECT r FROM Resenia r WHERE r.intercambio.propietario = :usuario OR r.intercambio.solicitante = :usuario")
     List<Resenia> findReseniasRelacionadasConUsuario(Usuario usuario);
 
-    // Reseñas hechas por un usuario (quien escribió la reseña)
-    List<Resenia> findByAutor(Usuario usuario);
+    List<Resenia> findByReseniadoId(Long reseniadoId);
+
+    List<Resenia> findByReseniadorId(Long reseniadorId);
 
     // Reseñas de un intercambio específico
     List<Resenia> findByIntercambio(Intercambio intercambio);

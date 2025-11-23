@@ -127,6 +127,9 @@ public class ChatService {
                                 chat.getIntercambio().getPublicacion().getMaterial().getTitulo(),
                                 chat.getIntercambio().getId(),
                                 nombreCompleto,
-                                otroUsuario.getEmail());
+                                otroUsuario.getId(),
+                                otroUsuario.getEmail(),
+                                chat.getIntercambio().getFechaInicio()
+                        );
         }
 }
