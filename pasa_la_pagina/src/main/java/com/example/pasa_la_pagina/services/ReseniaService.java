@@ -11,6 +11,7 @@ import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,74 +19,69 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReseniaService {
 
-    private final ReseniaRepository reseniaRepository;
-    private final UsuarioRepository usuarioRepository;
-    private final IntercambioRepository intercambioRepository;
+        private final ReseniaRepository reseniaRepository;
+        private final UsuarioRepository usuarioRepository;
+        private final IntercambioRepository intercambioRepository;
 
-    // 1️⃣ Crear una reseña
-    public ReseniaResponse crearResenia(CrearReseniaRequest request) {
-        Usuario autor = usuarioRepository.findById(request.getAutorId())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        // 1️⃣ Crear una reseña
+        public void crearResenia(CrearReseniaRequest request, String reseniadorEmail) {
+                Usuario reseniador = usuarioRepository.findByEmail(reseniadorEmail)
+                                .orElseThrow(() -> new RuntimeException("Reseniador no encontrado"));
 
-        Intercambio intercambio = intercambioRepository.findById(request.getIntercambioId())
-                .orElseThrow(() -> new RuntimeException("Intercambio no encontrado"));
+                Usuario reseniado = usuarioRepository.findById(request.getReseniadoId())
+                                .orElseThrow(() -> new RuntimeException("Reseniado no encontrado"));
 
-        Resenia resenia = Resenia.builder()
-                .descripcion(request.getDescripcion())
-                .valoracion(request.getValoracion())
-                .autor(autor)
-                .intercambio(intercambio)
-                .build();
+                Intercambio intercambio = intercambioRepository.findById(request.getIntercambioId())
+                                .orElseThrow(() -> new RuntimeException("Intercambio no encontrado"));
 
-        reseniaRepository.save(resenia);
-        return convertToResponse(resenia);
-    }
+                Resenia resenia = Resenia.builder()
+                                .descripcion(request.getDescripcion())
+                                .valoracion(request.getValoracion())
+                                .reseniado(reseniado)
+                                .reseniador(reseniador)
+                                .intercambio(intercambio)
+                                .fecha(LocalDateTime.now())
+                                .build();
 
-    // 2️⃣ Reseñas recibidas por un usuario
-    public List<ReseniaResponse> getReseniasRecibidas(Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                reseniaRepository.save(resenia);
+        }
 
-        List<Resenia> resenias = reseniaRepository.findReseniasRelacionadasConUsuario(usuario);
+        // 2️⃣ Reseñas recibidas por un usuario
+        public List<ReseniaResponse> getReseniasRecibidas(String usuarioEmail) {
+                Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        return resenias.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
+                List<Resenia> resenias = reseniaRepository.findByReseniadoId(usuario.getId());
 
-    // 3️⃣ Reseñas hechas por un usuario
-    public List<ReseniaResponse> getReseniasHechas(Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                return resenias.stream()
+                                .map((r) -> convertToResponse(r, true))
+                                .collect(Collectors.toList());
+        }
 
-        List<Resenia> resenias = reseniaRepository.findByAutor(usuario);
+        // 3️⃣ Reseñas hechas por un usuario
+        public List<ReseniaResponse> getReseniasHechas(String usuarioEmail) {
+                Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        return resenias.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
+                List<Resenia> resenias = reseniaRepository.findByReseniadorId(usuario.getId());
 
-    // 4️⃣ Reseñas por intercambio
-    public List<ReseniaResponse> getReseniasPorIntercambio(Long intercambioId) {
-        Intercambio intercambio = intercambioRepository.findById(intercambioId)
-                .orElseThrow(() -> new RuntimeException("Intercambio no encontrado"));
+                return resenias.stream()
+                                .map((r) -> convertToResponse(r, false))
+                                .collect(Collectors.toList());
+        }
 
-        List<Resenia> resenias = reseniaRepository.findByIntercambio(intercambio);
-
-        return resenias.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
-
-    // Método auxiliar para mapear Resenia -> DTO
-    private ReseniaResponse convertToResponse(Resenia r) {
-        return ReseniaResponse.builder()
-                .id(r.getId())
-                .descripcion(r.getDescripcion())
-                .valoracion(r.getValoracion())
-                .autorId(r.getAutor() != null ? r.getAutor().getId() : null)
-                .autorNombre(r.getAutor() != null ? r.getAutor().getNombre() : "Anónimo")
-                .intercambioId(r.getIntercambio().getId())
-                .build();
-    }
+        // Método auxiliar para mapear Resenia -> DTO
+        private ReseniaResponse convertToResponse(Resenia r, Boolean reseniador) {
+                Usuario usuario = reseniador ? r.getReseniador() : r.getReseniado();
+                return ReseniaResponse.builder()
+                                .id(r.getId())
+                                .descripcion(r.getDescripcion())
+                                .valoracion(r.getValoracion())
+                                .usuarioId(usuario != null ? usuario.getId() : null)
+                                .usuarioNombre(usuario != null ? usuario.getApellido() + " " + usuario.getNombre()
+                                                : "Anónimo")
+                                .intercambioId(r.getIntercambio().getId())
+                                .fecha(r.getFecha())
+                                .build();
+        }
 }

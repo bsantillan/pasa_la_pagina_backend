@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.DTOs.response;
 
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,5 +14,7 @@ public class ChatResponse {
     private String titulo_publicacion;
     private Long intercambio_id;
     private String usuario;
+    private Long usuario_id;
     private String usuario_email;
+    private LocalDateTime fecha_inicio;
 }

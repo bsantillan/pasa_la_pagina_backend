@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.DTOs.response;
 
+import java.time.LocalDateTime;
+
 import lombok.*;
 
 @Getter
@@ -10,9 +12,10 @@ import lombok.*;
 
 public class ReseniaResponse {
     private Long id;
+    private LocalDateTime fecha;
     private String descripcion;
     private Integer valoracion;
     private Long intercambioId;
-    private Long autorId;        // no está en la tabla, pero sirve para mostrar quién hizo la reseña
-    private String autorNombre;  // no está en la tabla, solo para la UI
+    private Long usuarioId;        
+    private String usuarioNombre;  // no está en la tabla, solo para la UI
 }

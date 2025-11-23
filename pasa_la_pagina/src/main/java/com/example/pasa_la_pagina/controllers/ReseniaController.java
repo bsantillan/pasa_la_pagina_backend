@@ -2,11 +2,13 @@ package com.example.pasa_la_pagina.controllers;
 
 import com.example.pasa_la_pagina.DTOs.requests.CrearReseniaRequest;
 import com.example.pasa_la_pagina.DTOs.response.ReseniaResponse;
+import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.services.ReseniaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -18,25 +20,24 @@ public class ReseniaController {
 
     // 1️⃣ Crear una reseña
     @PostMapping
-    public ResponseEntity<ReseniaResponse> crearResenia(@RequestBody CrearReseniaRequest request) {
-        return ResponseEntity.ok(reseniaService.crearResenia(request));
+    public ResponseEntity<?> crearResenia(@RequestBody CrearReseniaRequest request, Principal principal) {
+        try {
+            reseniaService.crearResenia(request, principal.getName());
+            return ResponseEntity.ok("Resenia creada correctamente");
+        } catch (IntercambioInvalidoException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        }
     }
 
     // 2️⃣ Reseñas recibidas por un usuario
-    @GetMapping("/usuario/{id}/recibidas")
-    public ResponseEntity<List<ReseniaResponse>> getReseniasRecibidas(@PathVariable Long id) {
-        return ResponseEntity.ok(reseniaService.getReseniasRecibidas(id));
+    @GetMapping("/usuario/recibidas")
+    public ResponseEntity<List<ReseniaResponse>> getReseniasRecibidas(Principal principal) {
+        return ResponseEntity.ok(reseniaService.getReseniasRecibidas(principal.getName()));
     }
 
     // 3️⃣ Reseñas hechas por un usuario
-    @GetMapping("/usuario/{id}/hechas")
-    public ResponseEntity<List<ReseniaResponse>> getReseniasHechas(@PathVariable Long id) {
-        return ResponseEntity.ok(reseniaService.getReseniasHechas(id));
-    }
-
-    // 4️⃣ Reseñas de un intercambio específico
-    @GetMapping("/intercambio/{id}")
-    public ResponseEntity<List<ReseniaResponse>> getReseniasPorIntercambio(@PathVariable Long id) {
-        return ResponseEntity.ok(reseniaService.getReseniasPorIntercambio(id));
+    @GetMapping("/usuario/hechas")
+    public ResponseEntity<List<ReseniaResponse>> getReseniasHechas(Principal principal) {
+        return ResponseEntity.ok(reseniaService.getReseniasHechas(principal.getName()));
     }
 }

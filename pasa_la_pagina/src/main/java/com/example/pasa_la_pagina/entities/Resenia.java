@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,13 +22,18 @@ public class Resenia {
 
     private Integer valoracion;
 
-    // Usuario que escribió la reseña
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "autor_id")
-    private Usuario autor;
+    @JoinColumn(name = "reseniador_id")
+    private Usuario reseniador;
 
-    // Relación con el intercambio
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reseniado_id")
+    private Usuario reseniado;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "intercambio_id", nullable = false)
     private Intercambio intercambio;
+
+    @Column(name = "fecha", nullable = false)
+    private LocalDateTime fecha;
 }
