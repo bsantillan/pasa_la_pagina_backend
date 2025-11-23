@@ -28,14 +28,20 @@ public class AuthService {
     private final JWTUtil jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
 
+    private String capitalizar(String texto) {
+        if (texto == null || texto.isEmpty())
+            return texto;
+        return texto.substring(0, 1).toUpperCase() + texto.substring(1).toLowerCase();
+    }
+
     public RegisterResponse register(RegisterRequest reg_rq) {
         if (usuarioRepository.existsByEmail(reg_rq.getEmail())) {
             throw new EmailEnUsoException("El email esta en uso");
         }
         Usuario usuario = Usuario.builder()
                 .email(reg_rq.getEmail())
-                .nombre(reg_rq.getNombre())
-                .apellido(reg_rq.getApellido())
+                .nombre(capitalizar(reg_rq.getNombre()))
+                .apellido(capitalizar(reg_rq.getApellido()))
                 .password_hash(passwordEncoder.encode(reg_rq.getPassword()))
                 .provider("local")
                 .build();

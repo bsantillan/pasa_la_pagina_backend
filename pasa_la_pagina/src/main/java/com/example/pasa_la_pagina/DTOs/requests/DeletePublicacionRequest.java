@@ -7,6 +7,4 @@ import lombok.Data;
 public class DeletePublicacionRequest {
     @NotNull(message = "El id de la publicacion es obligatorio")
     private Long id;
-    @NotNull(message = "El usuarioId es obligatorio")
-    private Long usuarioId;
 }
