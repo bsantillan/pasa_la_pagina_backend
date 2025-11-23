@@ -43,4 +43,6 @@ public class RecuperarPublicacionResponse {
     private String genero;
     private String autor;
 
+    private Boolean favorito;
+
 }

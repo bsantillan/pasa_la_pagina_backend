@@ -36,6 +36,7 @@ import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.AutorRepository;
 import com.example.pasa_la_pagina.repositories.CarreraRepository;
 import com.example.pasa_la_pagina.repositories.EditorialRepository;
+import com.example.pasa_la_pagina.repositories.FavoritoRepository;
 import com.example.pasa_la_pagina.repositories.GeneroRepository;
 import com.example.pasa_la_pagina.repositories.IdiomaRepository;
 import com.example.pasa_la_pagina.repositories.InstitucionRepository;
@@ -62,8 +63,9 @@ public class PublicacionService {
     private final GeneroRepository generoRepository;
     private final AutorRepository autorRepository;
     private final IdiomaRepository idiomaRepository;
+    private final FavoritoRepository favoritoRepository;
 
-    private RecuperarPublicacionResponse mapToResponseRecuperarPublicacion(Publicacion publicacion) {
+    private RecuperarPublicacionResponse mapToResponseRecuperarPublicacion(Publicacion publicacion, Long usuarioId) {
         RecuperarPublicacionResponse response = new RecuperarPublicacionResponse();
         response.setId(publicacion.getId());
         response.setLatitud(publicacion.getLatitud());
@@ -111,6 +113,8 @@ public class PublicacionService {
                 throw new RuntimeException("El material no es un libro ni un apunte");
             }
         }
+        boolean esFavorito = favoritoRepository.existsByUsuarioIdAndPublicacionId(usuarioId, publicacion.getId());
+        response.setFavorito(esFavorito);
         return response;
     }
 
@@ -173,7 +177,7 @@ public class PublicacionService {
                 .build();
 
         publicacionRepository.save(publicacion);
-        return mapToResponseRecuperarPublicacion(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion, usuario.getId());
     }
 
     public RecuperarPublicacionResponse nuevaPublicacionApunte(PublicacionApunteRequest request) {
@@ -235,7 +239,7 @@ public class PublicacionService {
                 .build();
 
         publicacionRepository.save(publicacion);
-        return mapToResponseRecuperarPublicacion(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion, usuario.getId());
     }
 
     public RecuperarPublicacionResponse actualizarPublicacion(UpdatePublicacionRequest request) {
@@ -350,7 +354,7 @@ public class PublicacionService {
 
         publicacionRepository.save(publicacion);
 
-        return mapToResponseRecuperarPublicacion(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion, request.getUsuarioId());
     }
 
     public PageRecuperarResponse buscarPublicaciones(BuscarPublicacionRequest request, Pageable pageable,
@@ -360,7 +364,7 @@ public class PublicacionService {
         if (request == null)
             return mapToResponsePageRecuperarPublicacion(
                     publicacionRepository.findAllDisponibles(pageable, usuario.getId())
-                            .map(this::mapToResponseRecuperarPublicacion));
+                            .map((pub) -> mapToResponseRecuperarPublicacion(pub, usuario.getId())));
 
         if ((request.getPrecio_minimo() != null || request.getPrecio_maximo() != null)
                 && request.getTipos_oferta() == null) {
@@ -419,7 +423,7 @@ public class PublicacionService {
         int end = Math.min((start + pageable.getPageSize()), publicaciones.size());
         List<RecuperarPublicacionResponse> contenido = publicaciones.subList(start, end)
                 .stream()
-                .map(this::mapToResponseRecuperarPublicacion)
+                .map((pub) ->mapToResponseRecuperarPublicacion(pub, usuario.getId()))
                 .toList();
         Page<RecuperarPublicacionResponse> response = new PageImpl<>(contenido, pageable, publicaciones.size());
         return mapToResponsePageRecuperarPublicacion(response);
@@ -431,7 +435,7 @@ public class PublicacionService {
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         Page<RecuperarPublicacionResponse> publicaciones = publicacionRepository
                 .findAllDisponiblesOrderByDistance(usuario_latitud, usuario_longitud, pageable, usuario.getId())
-                .map(this::mapToResponseRecuperarPublicacion);
+                .map((pub) -> mapToResponseRecuperarPublicacion(pub, usuario.getId()));
         PageRecuperarResponse response = new PageRecuperarResponse();
         response.setContent(publicaciones.getContent());
         response.setSize(publicaciones.getSize());
@@ -441,10 +445,12 @@ public class PublicacionService {
         return response;
     }
 
-    public RecuperarPublicacionResponse recuperarPublicacionById(Long id) {
+    public RecuperarPublicacionResponse recuperarPublicacionById(Long id, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         Publicacion publicacion = publicacionRepository.findDisponibleById(id)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontro una publicacion con el id: " + id));
-        return mapToResponseRecuperarPublicacion(publicacion);
+        return mapToResponseRecuperarPublicacion(publicacion, usuario.getId());
     }
 
     public void eliminarPublicacionById(DeletePublicacionRequest request, String userEmail) {
@@ -461,10 +467,12 @@ public class PublicacionService {
         publicacionRepository.save(publicacion);
     }
 
-    public PageRecuperarResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable) {
+    public PageRecuperarResponse recuperarPublicacionesByUserId(Long usuario_id, Pageable pageable, String userEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         return mapToResponsePageRecuperarPublicacion(
                 publicacionRepository.findAllDisponiblesByUsuarioId(usuario_id, pageable)
-                        .map(this::mapToResponseRecuperarPublicacion));
+                        .map((pub) -> mapToResponseRecuperarPublicacion(pub,usuario.getId())));
     }
 
     public Editorial recuperarEditorial(String editorial) {
