@@ -70,16 +70,19 @@ public class PublicacionController {
             @RequestParam Double usuario_longitud,
             Principal principal) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(publicacionService.recuperarPublicaciones(pageable,usuario_latitud,usuario_longitud,principal.getName()));
+        return ResponseEntity.ok(publicacionService.recuperarPublicaciones(pageable, usuario_latitud, usuario_longitud,
+                principal.getName()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RecuperarPublicacionResponse> recuperarPublicacionById(@PathVariable Long id) {
-        return ResponseEntity.ok(publicacionService.recuperarPublicacionById(id));
+    public ResponseEntity<RecuperarPublicacionResponse> recuperarPublicacionById(@PathVariable Long id,
+            Principal principal) {
+        return ResponseEntity.ok(publicacionService.recuperarPublicacionById(id, principal.getName()));
     }
 
     @DeleteMapping("/eliminar")
-    public ResponseEntity<Void> eliminarPublicacionById(@Valid @RequestBody DeletePublicacionRequest request, Principal principal) {
+    public ResponseEntity<Void> eliminarPublicacionById(@Valid @RequestBody DeletePublicacionRequest request,
+            Principal principal) {
         publicacionService.eliminarPublicacionById(request, principal.getName());
         return ResponseEntity.noContent().build();
     }
@@ -88,8 +91,9 @@ public class PublicacionController {
     public ResponseEntity<PageRecuperarResponse> recuperarPublicacionesByUserId(
             @PathVariable Long usuario_id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            Principal principal) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(publicacionService.recuperarPublicacionesByUserId(usuario_id,pageable));
+        return ResponseEntity.ok(publicacionService.recuperarPublicacionesByUserId(usuario_id, pageable, principal.getName()));
     }
 }
