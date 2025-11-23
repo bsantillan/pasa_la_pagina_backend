@@ -138,10 +138,6 @@ public class PublicacionService {
         if (!request.getDigital() && request.getCantidad() == null) {
             throw new IllegalArgumentException("La cantidad es obligatoria si el material es formato 'Digital'");
         }
-        if (request.getDigital() && request.getUrl() == null) {
-            throw new IllegalArgumentException(
-                    "La url del material es obligatoria si el material es formato 'Digital'");
-        }
 
         Idioma idioma = recuperarIdioma(request.getIdioma());
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
@@ -151,7 +147,7 @@ public class PublicacionService {
 
         Libro libro = Libro.builder()
                 .titulo(request.getTitulo())
-                .url(request.getUrl())
+                .url(request.getDigital() && request.getTipo_oferta() == TipoOferta.Donacion ? request.getUrl() : null)
                 .descripcion(request.getDescripcion())
                 .digital(request.getDigital())
                 .nuevo(request.getNuevo())
@@ -194,10 +190,6 @@ public class PublicacionService {
         if (!request.getDigital() && request.getCantidad() == null) {
             throw new IllegalArgumentException("La cantidad es obligatoria si el material es formato 'Digital'");
         }
-        if (request.getDigital() && request.getUrl() == null) {
-            throw new IllegalArgumentException(
-                    "La url del material es obligatoria si el material es formato 'Digital'");
-        }
 
         Idioma idioma = recuperarIdioma(request.getIdioma());
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).get();
@@ -211,7 +203,7 @@ public class PublicacionService {
 
         Apunte apunte = Apunte.builder()
                 .titulo(request.getTitulo())
-                .url(request.getUrl())
+                .url(request.getDigital() && request.getTipo_oferta() == TipoOferta.Donacion ? request.getUrl() : null)
                 .descripcion(request.getDescripcion())
                 .digital(request.getDigital())
                 .nuevo(request.getNuevo())
@@ -264,10 +256,6 @@ public class PublicacionService {
         }
         if (!request.getDigital() && request.getCantidad() == null) {
             throw new IllegalArgumentException("La cantidad es obligatoria si el material es formato 'Digital'");
-        }
-        if (request.getDigital() && request.getUrl() == null) {
-            throw new IllegalArgumentException(
-                    "La url del material es obligatoria si el material es formato 'Digital'");
         }
 
         if (request.getLatitud() != null)
@@ -423,7 +411,7 @@ public class PublicacionService {
         int end = Math.min((start + pageable.getPageSize()), publicaciones.size());
         List<RecuperarPublicacionResponse> contenido = publicaciones.subList(start, end)
                 .stream()
-                .map((pub) ->mapToResponseRecuperarPublicacion(pub, usuario.getId()))
+                .map((pub) -> mapToResponseRecuperarPublicacion(pub, usuario.getId()))
                 .toList();
         Page<RecuperarPublicacionResponse> response = new PageImpl<>(contenido, pageable, publicaciones.size());
         return mapToResponsePageRecuperarPublicacion(response);
@@ -472,7 +460,7 @@ public class PublicacionService {
                 .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + userEmail));
         return mapToResponsePageRecuperarPublicacion(
                 publicacionRepository.findAllDisponiblesByUsuarioId(usuario_id, pageable)
-                        .map((pub) -> mapToResponseRecuperarPublicacion(pub,usuario.getId())));
+                        .map((pub) -> mapToResponseRecuperarPublicacion(pub, usuario.getId())));
     }
 
     public Editorial recuperarEditorial(String editorial) {
