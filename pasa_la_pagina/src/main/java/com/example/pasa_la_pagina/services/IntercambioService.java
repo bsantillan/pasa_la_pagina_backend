@@ -7,17 +7,22 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
+import com.example.pasa_la_pagina.DTOs.response.NotificacionUpdateResponse;
 import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Intercambio;
+import com.example.pasa_la_pagina.entities.Notificacion;
 import com.example.pasa_la_pagina.entities.Publicacion;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.Enum.EstadoIntercambio;
+import com.example.pasa_la_pagina.entities.Enum.TipoNotificacion;
+import com.example.pasa_la_pagina.entities.Enum.TipoUpdateNotificacion;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAceptableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAutorizadoException;
@@ -26,6 +31,7 @@ import com.example.pasa_la_pagina.exceptions.PublicacionNoEncontradaException;
 import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 import com.example.pasa_la_pagina.repositories.ChatRepository;
 import com.example.pasa_la_pagina.repositories.IntercambioRepository;
+import com.example.pasa_la_pagina.repositories.NotificacionRepository;
 import com.example.pasa_la_pagina.repositories.PublicacionRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 
@@ -39,6 +45,9 @@ public class IntercambioService {
     private final UsuarioRepository usuarioRepository;
     private final PublicacionRepository publicacionRepository;
     private final ChatRepository chatRepository;
+    private final NotificacionService notificacionService;
+    private final NotificacionRepository notificacionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private PageRecuperarResponse mapToPageResponse(Page<?> pages) {
         PageRecuperarResponse response = new PageRecuperarResponse();
@@ -108,6 +117,16 @@ public class IntercambioService {
                 .propietario(propietario)
                 .build();
         intercambioRepository.save(intercambio);
+
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.SOLICITUD_INTERCAMBIO,
+                intercambio,
+                null,
+                null,
+                propietario,
+                solicitante);
+
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
     }
 
     @Transactional
@@ -127,16 +146,29 @@ public class IntercambioService {
         intercambio.setChat(Chat.builder()
                 .titulo("Chat")
                 .build());
+
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_ACEPTADO,
+                intercambio,
+                null,
+                null,
+                intercambio.getSolicitante(),
+                intercambio.getPropietario());
+
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
+
         intercambioRepository.save(intercambio);
     }
 
     @Transactional
     public void cancelarIntercambio(Long intercambioId, String usuarioEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
+
         Intercambio intercambio = intercambioRepository.findById(intercambioId)
                 .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
 
-        if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE
-                && intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
+        if (intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
             throw new IntercambioNoAceptableException(intercambio.getEstado());
         }
 
@@ -145,20 +177,78 @@ public class IntercambioService {
             throw new IntercambioNoAutorizadoException();
         }
 
-        if (intercambio.getEstado() == EstadoIntercambio.ACEPTADO) {
-            chatRepository.delete(intercambio.getChat());
-        }
+        Chat chat = intercambio.getChat();
+        intercambio.setChat(null);
+        chatRepository.delete(chat);
 
         intercambio.setEstado(EstadoIntercambio.CANCELADO);
         intercambio.setFechaFin(LocalDateTime.now());
 
-        intercambio.setChat(null);
+        Usuario receptor;
+        if (intercambio.getPropietario().getId().equals(usuario.getId())) {
+            receptor = intercambio.getSolicitante();
+        } else {
+            receptor = intercambio.getPropietario();
+        }
+
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_CANCELADO,
+                intercambio,
+                null,
+                null,
+                receptor,
+                usuario);
+
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
+
+        intercambioRepository.save(intercambio);
+    }
+
+    @Transactional
+    public void rechazarIntercambio(Long intercambioId, String usuarioEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
+
+        Intercambio intercambio = intercambioRepository.findById(intercambioId)
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
+
+        if (intercambio.getEstado() != EstadoIntercambio.PENDIENTE) {
+            throw new IntercambioNoAceptableException(intercambio.getEstado());
+        }
+
+        if (!intercambio.getPropietario().getEmail().equals(usuarioEmail)
+                && !intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
+            throw new IntercambioNoAutorizadoException();
+        }
+
+        intercambio.setEstado(EstadoIntercambio.RECHAZADO);
+        intercambio.setFechaFin(LocalDateTime.now());
+
+        Usuario receptor;
+        if (intercambio.getPropietario().getId().equals(usuario.getId())) {
+            receptor = intercambio.getSolicitante();
+        } else {
+            receptor = intercambio.getPropietario();
+        }
+
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_RECHAZADO,
+                intercambio,
+                null,
+                null,
+                receptor,
+                usuario);
+
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
 
         intercambioRepository.save(intercambio);
     }
 
     @Transactional
     public void concretarIntercambio(Long intercambioId, String usuarioEmail) {
+        Usuario usuario = usuarioRepository.findByEmail(usuarioEmail)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + usuarioEmail));
+
         Intercambio intercambio = intercambioRepository.findById(intercambioId)
                 .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
 
@@ -167,17 +257,29 @@ public class IntercambioService {
             throw new IntercambioNoAutorizadoException();
         }
 
-        // Marcar que el usuario concreto el intercambio
+        Usuario receptor;
         if (intercambio.getSolicitante().getEmail().equals(usuarioEmail)) {
             intercambio.setSolicitanteConcreto(true);
+            receptor = intercambio.getPropietario();
         } else {
             intercambio.setPropietarioConcreto(true);
+            receptor = intercambio.getSolicitante();
         }
 
-        // Si ambos concretaron, actualizar estado
         if (intercambio.isConcretado()) {
             intercambio.setEstado(EstadoIntercambio.CONCRETADO);
+            chatRepository.delete(intercambio.getChat());
         }
+
+        Notificacion notiificacion = notificacionService.crearNotificacion(
+                TipoNotificacion.INTERCAMBIO_CONCRETADO,
+                intercambio,
+                null,
+                null,
+                receptor,
+                usuario);
+
+        notificacionService.enviarNotificacionAUsuario(notiificacion);
 
         intercambioRepository.save(intercambio);
     }
@@ -224,6 +326,13 @@ public class IntercambioService {
                 filtros.getTituloPublicacion(),
                 filtros.getUsuario(),
                 pageable);
+
+        intercambios.forEach(intercambio -> notificacionRepository.deleteByReceptorIdAndIntercambioId(usuario.getId(),
+                intercambio.getId()));
+
+        messagingTemplate.convertAndSend(
+                "/topic/notificaciones/" + usuario.getId(),
+                new NotificacionUpdateResponse(TipoUpdateNotificacion.ACTUALIZAR_TODO, null));
 
         return mapToPageResponse(intercambios.map(i -> mapToResponseRecuperarIntercambio(i, usuario.getId())));
     }

@@ -51,7 +51,7 @@ public class IntercambioController {
     }
 
     @PatchMapping("/aceptar/{id}")
-    @Operation(summary = "Aceptar intercambio", description = "Solo el propietario habilita el chat cuando acepta la propuesta.")
+    @Operation(summary = "Aceptar intercambio", description = "Acepta una propuesta pendiente de un intercambio. Solo el propietario habilita el chat cuando acepta la propuesta.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Intercambio habilitado"),
             @ApiResponse(responseCode = "403", description = "Usuario no autorizado a aceptar"),
@@ -85,7 +85,7 @@ public class IntercambioController {
     }
 
     @PatchMapping("/cancelar/{id}")
-    @Operation(summary = "Cancelar intercambio", description = "Cancela una propuesta pendiente e cancela un intercambio ")
+    @Operation(summary = "Cancelar intercambio", description = "Cancela una propuesta aceptada de un intercambio")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Intercambio cancelado"),
             @ApiResponse(responseCode = "403", description = "Usuario no autorizado a cancelar"),
@@ -96,6 +96,23 @@ public class IntercambioController {
         try {
             intercambioService.cancelarIntercambio(id, principal.getName());
             return ResponseEntity.ok("Intercambio cancelado correctamente.");
+        } catch (IntercambioInvalidoException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/rechazar/{id}")
+    @Operation(summary = "Rechazar intercambio", description = "Rechaza una propuesta pendiente de un intercambio")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Intercambio rechazado"),
+            @ApiResponse(responseCode = "403", description = "Usuario no autorizado a cancelar"),
+            @ApiResponse(responseCode = "404", description = "Intercambio inexistente"),
+            @ApiResponse(responseCode = "409", description = "Intercambio no se puede rechazar")
+    })
+    public ResponseEntity<?> rechazar(@PathVariable Long id, Principal principal) {
+        try {
+            intercambioService.rechazarIntercambio(id, principal.getName());
+            return ResponseEntity.ok("Intercambio rechazado correctamente.");
         } catch (IntercambioInvalidoException e) {
             return ResponseEntity.status(409).body(e.getMessage());
         }
