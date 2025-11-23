@@ -39,6 +39,12 @@ public class Intercambio {
     @Builder.Default
     private EstadoIntercambio estado = EstadoIntercambio.PENDIENTE;
 
+    @Column(name = "codigo_validacion", unique = true, length = 6)
+    private String codigoValidacion;
+
+    @Column(name = "codigo_expiracion")
+    private LocalDateTime codigoExpiracion;
+
     // FK: usuario_solicitante_id -> Usuarios.id
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "usuario_solicitante_id", nullable = false, foreignKey = @ForeignKey(name = "fk_intercambio_usuario_solicitante"))
@@ -71,6 +77,43 @@ public class Intercambio {
     @Builder.Default
     @OneToMany(mappedBy = "intercambio", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Resenia> resenias = new ArrayList<>();
+
+    public void generarCodigoValidacion() {
+        if (this.codigoValidacion == null) {
+            this.codigoValidacion = generarCodigoAleatorio();
+            this.codigoExpiracion = LocalDateTime.now().plusHours(1);
+        }
+    }
+
+    public Boolean esCodigoValido(String codigo) {
+        return this.codigoValidacion != null && 
+               this.codigoValidacion.equals(codigo) && 
+               this.codigoExpiracion != null && 
+               this.codigoExpiracion.isAfter(LocalDateTime.now());
+    }
+
+    public Boolean esCodigoExpirado() {
+        return this.codigoExpiracion != null && 
+               this.codigoExpiracion.isBefore(LocalDateTime.now());
+    }
+
+    public Boolean debeCambiarARechazado() {
+        return this.estado == EstadoIntercambio.ACEPTADO && 
+               this.codigoValidacion != null && 
+               this.codigoExpiracion != null && 
+               LocalDateTime.now().isAfter(this.codigoExpiracion) && 
+               !this.solicitanteConcreto; // El acredor no ha concretado
+    }
+
+    private String generarCodigoAleatorio() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < 6; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
 
     public Boolean isConcretado() {
         return solicitanteConcreto && propietarioConcreto;

@@ -48,4 +48,12 @@ public interface IntercambioRepository extends JpaRepository<Intercambio, Long> 
             "WHERE i.propietario.id = :usuarioId ")
     Page<Intercambio> buscarTodosIntercambios(Pageable pageable, @Param("usuarioId") Long usuarioId);
 
+    List<Intercambio> findByEstado(EstadoIntercambio estado);
+
+    @Query("SELECT i FROM Intercambio i WHERE i.estado = :estado AND i.codigoValidacion IS NOT NULL")
+    List<Intercambio> findByEstadoAndCodigoValidacionIsNotNull(@Param("estado") EstadoIntercambio estado);
+    
+    @Query("SELECT i FROM Intercambio i WHERE i.solicitante.id = :usuarioId OR i.propietario.id = :usuarioId")
+    Page<Intercambio> findBySolicitanteIdOrPropietarioId(@Param("usuarioId") Long usuarioId, Pageable pageable);
+
 }

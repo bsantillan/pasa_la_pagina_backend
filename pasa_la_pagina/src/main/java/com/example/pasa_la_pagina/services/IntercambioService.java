@@ -7,10 +7,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
+import com.example.pasa_la_pagina.DTOs.response.IntercambioEstadoEvento;
 import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
 import com.example.pasa_la_pagina.entities.Chat;
@@ -39,6 +42,163 @@ public class IntercambioService {
     private final UsuarioRepository usuarioRepository;
     private final PublicacionRepository publicacionRepository;
     private final ChatRepository chatRepository;
+
+    private final SimpMessagingTemplate webSocketTemplate;
+
+    @Transactional
+    public String generarCodigoValidacion(Long intercambioId, String emailUsuario) {
+        Intercambio intercambio = intercambioRepository.findById(intercambioId)
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
+
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+
+        if (!intercambio.getPropietario().getEmail().equals(emailUsuario)) {
+            throw new IntercambioNoAutorizadoException();
+        }
+
+        if (intercambio.getEstado() != EstadoIntercambio.ACEPTADO) {
+            throw new IntercambioNoAceptableException("Solo se puede generar código para intercambios aceptados");
+        }
+
+        intercambio.generarCodigoValidacion();
+        intercambio.setPropietarioConcreto(true);
+        intercambioRepository.save(intercambio);
+
+        IntercambioEstadoEvento evento = IntercambioEstadoEvento.builder()
+                .intercambioId(intercambioId)
+                .estado(intercambio.getEstado())
+                .puedeDejarResena(false)
+                .mensaje("Se ha generado un código de validación")
+                .build();
+
+        webSocketTemplate.convertAndSend(
+            "/topic/intercambio/" + intercambioId + "/estado", 
+            evento
+        );
+
+        webSocketTemplate.convertAndSendToUser(
+            intercambio.getSolicitante().getEmail(),
+            "/user/queue/intercambio-estado",
+            evento
+        );
+
+        webSocketTemplate.convertAndSendToUser(
+            intercambio.getPropietario().getEmail(),
+            "/user/queue/intercambio-estado",
+            evento
+        );
+
+        return intercambio.getCodigoValidacion();
+    }
+
+    @Transactional
+    public void validarIntercambioConCodigo(Long intercambioId, String codigo, String emailUsuario) {
+        Intercambio intercambio = intercambioRepository.findById(intercambioId)
+                .orElseThrow(() -> new IntercambioNoEncontradoException(intercambioId));
+
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado"));
+
+        if (!intercambio.getSolicitante().getEmail().equals(emailUsuario)) {
+            throw new IntercambioNoAutorizadoException();
+        }
+
+        if (intercambio.esCodigoExpirado()) {
+            throw new IntercambioInvalidoException("El código de validación ha expirado");
+        }
+
+        if (!intercambio.esCodigoValido(codigo)) {
+            throw new IntercambioInvalidoException("Código de validación inválido");
+        }
+
+        intercambio.setSolicitanteConcreto(true);
+
+        if (intercambio.isConcretado()) {
+            intercambio.setEstado(EstadoIntercambio.CONCRETADO);
+            intercambio.setFechaFin(LocalDateTime.now());
+            intercambio.setCodigoValidacion(null);
+            intercambio.setCodigoExpiracion(null);
+        }
+
+        intercambioRepository.save(intercambio);
+
+        IntercambioEstadoEvento evento = IntercambioEstadoEvento.builder()
+                .intercambioId(intercambioId)
+                .estado(intercambio.getEstado())
+                .puedeDejarResena(intercambio.getEstado() == EstadoIntercambio.CONCRETADO)
+                .mensaje("Intercambio concretado exitosamente")
+                .build();
+
+        webSocketTemplate.convertAndSendToUser(
+        intercambio.getPropietario().getEmail(),
+        "/queue/intercambio-estado",
+        evento
+        );
+
+        webSocketTemplate.convertAndSendToUser(
+            intercambio.getSolicitante().getEmail(),
+            "/queue/intercambio-estado",
+            evento
+        );
+
+    // 👇 Opcional: enviar también al topic general
+        webSocketTemplate.convertAndSend(
+            "/topic/intercambio/" + intercambioId + "/estado", 
+            evento
+        );
+    }
+
+    @Transactional
+    public void verificarYActualizarExpirados() {
+        List<Intercambio> intercambios = intercambioRepository.findByEstadoAndCodigoValidacionIsNotNull(EstadoIntercambio.ACEPTADO);
+        
+        for (Intercambio intercambio : intercambios) {
+            if (intercambio.debeCambiarARechazado()) {
+                intercambio.setEstado(EstadoIntercambio.RECHAZADO);
+                intercambio.setFechaFin(LocalDateTime.now());
+                intercambio.setCodigoValidacion(null);
+                intercambio.setCodigoExpiracion(null);
+                
+                intercambioRepository.save(intercambio);
+                
+                try {
+                IntercambioEstadoEvento evento = IntercambioEstadoEvento.builder()
+                        .intercambioId(intercambio.getId())
+                        .estado(EstadoIntercambio.RECHAZADO)
+                        .puedeDejarResena(true)
+                        .mensaje("Intercambio rechazado por expiración del código de validación")
+                        .build();
+
+                webSocketTemplate.convertAndSend(
+                    "/topic/intercambio/" + intercambio.getId() + "/estado", 
+                    evento
+                );
+
+                // Notificar a ambos participantes
+                webSocketTemplate.convertAndSendToUser(
+                    intercambio.getSolicitante().getEmail(),
+                    "/queue/intercambio-estado",
+                    evento
+                );
+
+                webSocketTemplate.convertAndSendToUser(
+                    intercambio.getPropietario().getEmail(),
+                    "/queue/intercambio-estado",
+                    evento
+                );
+            } catch (Exception e) {
+                // Si no hay usuarios conectados, no importa
+                System.out.println("No se pudo enviar notificación WebSocket: " + e.getMessage());
+            }
+        }
+    }
+}
+
+    @Scheduled(fixedRate = 300000) // 5 minutos
+    public void verificarExpiradosProgramado() {
+        verificarYActualizarExpirados();
+    }
 
     private PageRecuperarResponse mapToPageResponse(Page<?> pages) {
         PageRecuperarResponse response = new PageRecuperarResponse();
