@@ -20,6 +20,7 @@ import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
 import com.example.pasa_la_pagina.entities.Chat;
 import com.example.pasa_la_pagina.entities.Intercambio;
+import com.example.pasa_la_pagina.entities.Material;
 import com.example.pasa_la_pagina.entities.Notificacion;
 import com.example.pasa_la_pagina.entities.Publicacion;
 import com.example.pasa_la_pagina.entities.Usuario;
@@ -121,7 +122,18 @@ public class IntercambioService {
             throw new IntercambioInvalidoException("Código de validación inválido");
         }
 
+        Material material = intercambio.getPublicacion().getMaterial();
+        
+
+        if (material.getCantidad() > 1 ){
+            material.setCantidad(material.getCantidad() - 1);
+        }else{
+            material.setCantidad(0);
+            intercambio.getPublicacion().setDisponible(false);
+        }
+
         intercambio.setSolicitanteConcreto(true);
+
 
         if (intercambio.isConcretado()) {
             intercambio.setEstado(EstadoIntercambio.CONCRETADO);
