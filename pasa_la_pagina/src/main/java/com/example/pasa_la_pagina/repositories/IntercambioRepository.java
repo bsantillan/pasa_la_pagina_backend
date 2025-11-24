@@ -56,4 +56,14 @@ public interface IntercambioRepository extends JpaRepository<Intercambio, Long> 
     @Query("SELECT i FROM Intercambio i WHERE i.solicitante.id = :usuarioId OR i.propietario.id = :usuarioId")
     Page<Intercambio> findBySolicitanteIdOrPropietarioId(@Param("usuarioId") Long usuarioId, Pageable pageable);
 
+    // En IntercambioRepository.java
+    @Query("""
+        SELECT i FROM Intercambio i 
+        JOIN FETCH i.publicacion p 
+        JOIN FETCH p.material m
+        WHERE i.solicitante.id = :usuarioId OR i.propietario.id = :usuarioId
+        ORDER BY i.fechaInicio DESC
+        """)
+    List<Intercambio> findBySolicitanteOrPropietarioWithPublicacion(@Param("usuarioId") Long usuarioId);
+
 }

@@ -119,6 +119,31 @@ public class Intercambio {
         return solicitanteConcreto && propietarioConcreto;
     }
 
+    public Boolean isReseñable(Usuario usuario) {
+        if (this.estado != EstadoIntercambio.CONCRETADO && this.estado != EstadoIntercambio.CANCELADO) {
+            return false;
+        }
+
+        boolean participo = this.solicitante.equals(usuario) || this.propietario.equals(usuario);
+        if (!participo) {
+            return false;
+        }
+        return !yaResenio(usuario);
+    }
+
+    public Boolean yaResenio(Usuario usuario) {
+        return this.resenias.stream().anyMatch(r -> r.getReseniador().equals(usuario));
+    }
+
+    public String getRolUsuario(Usuario usuario) {
+        if (this.solicitante.equals(usuario)) {
+            return "Solicitante";
+        } else if (this.propietario.equals(usuario)) {
+            return "Propietario";
+        }
+        return "No participa";
+}
+
     @AssertTrue(message = "Un intercambio puede tener como máximo 2 reseñas.")
     public boolean isReseniasValidas() {
         return resenias.size() <= 2;
