@@ -2,6 +2,7 @@ package com.example.pasa_la_pagina.controllers;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
 import com.example.pasa_la_pagina.DTOs.response.IntercambioEstadoEvento;
 import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
+import com.example.pasa_la_pagina.DTOs.response.IntercambioResenaResponse;
 import com.example.pasa_la_pagina.entities.Intercambio;
 import com.example.pasa_la_pagina.entities.Enum.EstadoIntercambio;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
@@ -240,4 +242,17 @@ public class IntercambioController {
 
         return ResponseEntity.ok(intercambioService.buscarIntercambios(page, size, principal.getName(), filtros));
     }
+    @GetMapping("/intercambios-usuario-reseñables")
+    @Operation(summary = "Obtener mis intercambios reseñables", description = "Devuelve todos los intercambios en los que participo y si puedo dejar reseña")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Se retornan los intercambios reseñables"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<List<IntercambioResenaResponse>> getIntercambiosReseñables(Principal principal) { // 👈 Principal en lugar de email
+        List<IntercambioResenaResponse> response = intercambioService.getIntercambiosReseñables(principal.getName()); // principal.getName() = email
+        return ResponseEntity.ok(response);
+    }
 }
+
+

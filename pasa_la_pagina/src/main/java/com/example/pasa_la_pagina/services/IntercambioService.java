@@ -2,6 +2,7 @@ package com.example.pasa_la_pagina.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.pasa_la_pagina.DTOs.requests.BuscarIntercambioRequest;
 import com.example.pasa_la_pagina.DTOs.response.IntercambioEstadoEvento;
+import com.example.pasa_la_pagina.DTOs.response.IntercambioResenaResponse;
 import com.example.pasa_la_pagina.DTOs.response.NotificacionUpdateResponse;
 import com.example.pasa_la_pagina.DTOs.response.PageRecuperarResponse;
 import com.example.pasa_la_pagina.DTOs.response.RecuperarIntercambioResponse;
@@ -162,7 +164,7 @@ public class IntercambioService {
         
         for (Intercambio intercambio : intercambios) {
             if (intercambio.debeCambiarARechazado()) {
-                intercambio.setEstado(EstadoIntercambio.RECHAZADO);
+                intercambio.setEstado(EstadoIntercambio.CANCELADO);
                 intercambio.setFechaFin(LocalDateTime.now());
                 intercambio.setCodigoValidacion(null);
                 intercambio.setCodigoExpiracion(null);
@@ -172,9 +174,9 @@ public class IntercambioService {
                 try {
                 IntercambioEstadoEvento evento = IntercambioEstadoEvento.builder()
                         .intercambioId(intercambio.getId())
-                        .estado(EstadoIntercambio.RECHAZADO)
+                        .estado(EstadoIntercambio.CANCELADO)
                         .puedeDejarResena(true)
-                        .mensaje("Intercambio rechazado por expiración del código de validación")
+                        .mensaje("Intercambio cancelado por expiración del código de validación")
                         .build();
 
                 webSocketTemplate.convertAndSend(
@@ -206,6 +208,36 @@ public class IntercambioService {
     public void verificarExpiradosProgramado() {
         verificarYActualizarExpirados();
     }
+
+    @Transactional(readOnly = true)
+    public List<IntercambioResenaResponse> getIntercambiosReseñables(String emailUsuario) {
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado: " + emailUsuario));
+
+        List<Intercambio> intercambios = intercambioRepository.findBySolicitanteOrPropietarioWithPublicacion(usuario.getId());
+
+        return intercambios.stream()
+                .map(i -> mapToIntercambioResenaResponse(i, usuario))
+                .collect(Collectors.toList());
+    }
+
+private IntercambioResenaResponse mapToIntercambioResenaResponse(Intercambio intercambio, Usuario usuario) {
+    String rol = intercambio.getRolUsuario(usuario);
+    Usuario otroUsuario = rol.equals("Solicitante") ? intercambio.getPropietario() : intercambio.getSolicitante();
+
+    return IntercambioResenaResponse.builder()
+            .id(intercambio.getId())
+            .tituloPublicacion(intercambio.getPublicacion().getMaterial().getTitulo())
+            .nombre(otroUsuario.getNombre())
+            .apellido(otroUsuario.getApellido())
+            .usuarioId(otroUsuario.getId())
+            .usuarioEmail(otroUsuario.getEmail())
+            .estado(intercambio.getEstado())
+            .fechaInicio(intercambio.getFechaInicio().toString())
+            .esReseñable(intercambio.isReseñable(usuario))
+            .rolUsuario(rol)
+            .build();
+}
 
     private PageRecuperarResponse mapToPageResponse(Page<?> pages) {
         PageRecuperarResponse response = new PageRecuperarResponse();
