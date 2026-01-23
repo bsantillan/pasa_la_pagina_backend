@@ -7,10 +7,10 @@ import com.example.pasa_la_pagina.DTOs.GoogleUser;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
 import com.example.pasa_la_pagina.DTOs.response.LoginResponse;
-import com.example.pasa_la_pagina.DTOs.response.RegisterResponse;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
 import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
+import com.example.pasa_la_pagina.exceptions.EmailNoVerificadoException;
 import com.example.pasa_la_pagina.repositories.RefreshTokenRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.utils.GoogleTokenVerifier;
@@ -27,6 +27,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JWTUtil jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
+    private final VerificationService verificationService;
 
     private String capitalizar(String texto) {
         if (texto == null || texto.isEmpty())
@@ -34,27 +35,29 @@ public class AuthService {
         return texto.substring(0, 1).toUpperCase() + texto.substring(1).toLowerCase();
     }
 
-    public RegisterResponse register(RegisterRequest reg_rq) {
-        if (usuarioRepository.existsByEmail(reg_rq.getEmail())) {
-            throw new EmailEnUsoException("El email esta en uso");
+    public void register(RegisterRequest reg_rq) {
+        Usuario usuario = usuarioRepository.findByEmail(reg_rq.getEmail()).orElse(null);
+
+        if (usuario != null) {
+
+            if (!usuario.getEmail_verificado()) {
+                verificationService.enviarTokenVerificacion(usuario.getEmail());
+                return;
+            }
+
+            throw new EmailEnUsoException("El email ya está registrado");
         }
-        Usuario usuario = Usuario.builder()
+
+        Usuario usuario_nuevo = Usuario.builder()
                 .email(reg_rq.getEmail())
                 .nombre(capitalizar(reg_rq.getNombre()))
                 .apellido(capitalizar(reg_rq.getApellido()))
                 .password_hash(passwordEncoder.encode(reg_rq.getPassword()))
                 .provider("local")
                 .build();
-        Usuario usuario_bd = usuarioRepository.save(usuario);
+        usuarioRepository.save(usuario_nuevo);
 
-        RegisterResponse response = new RegisterResponse();
-        response.setId(usuario_bd.getId());
-        response.setEmail(usuario_bd.getEmail());
-        response.setApellido(usuario_bd.getApellido());
-        response.setNombre(usuario_bd.getNombre());
-        response.setAccessToken(jwtUtil.generateToken(usuario.getEmail()));
-        response.setRefreshToken(jwtUtil.createRefreshToken(usuario_bd).getToken());
-        return response;
+        verificationService.enviarTokenVerificacion(usuario_nuevo.getEmail());
     }
 
     public LoginResponse login(LoginRequest log_rq) {
@@ -64,6 +67,11 @@ public class AuthService {
         if (!passwordEncoder.matches(log_rq.getPassword(), usuario.getPassword_hash())) {
             throw new CredencialesInvalidasException("Email o contraseña incorrectos");
         }
+
+        if (!usuario.getEmail_verificado()) {
+            throw new EmailNoVerificadoException();
+        }
+        
         refreshTokenRepository.deleteByUsuario(usuario);
 
         LoginResponse response = new LoginResponse();
@@ -86,6 +94,8 @@ public class AuthService {
                             .nombre(googleUser.getFirstName())
                             .apellido(googleUser.getLastName())
                             .provider("google")
+                            .email_verificado(true)
+                            .enabled(true)
                             .build()));
             LoginResponse response = new LoginResponse();
             response.setAccessToken(jwtUtil.generateToken(usuario.getEmail()));

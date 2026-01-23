@@ -12,7 +12,6 @@ import com.example.pasa_la_pagina.DTOs.requests.GoogleLoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
 import com.example.pasa_la_pagina.DTOs.response.LoginResponse;
-import com.example.pasa_la_pagina.DTOs.response.RegisterResponse;
 import com.example.pasa_la_pagina.services.AuthService;
 
 import jakarta.validation.Valid;
@@ -26,15 +25,16 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request){
-        return ResponseEntity.ok(authService.register(request));
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
-    
+
     @PostMapping("/google")
     public ResponseEntity<LoginResponse> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
         return ResponseEntity.ok(authService.loginWithGoogle(request.getIdToken()));
@@ -48,11 +48,11 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
-        if (refreshToken==null || refreshToken.isBlank()) {
+        if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Refresh token requerido"));
         }
         authService.logout(refreshToken);
         return ResponseEntity.ok(Map.of("message", "Sesión cerrada correctamente"));
     }
-    
+
 }

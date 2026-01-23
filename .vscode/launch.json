@@ -23,7 +23,9 @@
                 "MYSQL_USER": "bruno123",
                 "MYSQL_PASSWORD": "bruno123",
                 "JWT_SECRET": "67b4f9d7518ed3f5f7499aa2982565ca1ad9a2b2b99418e4a16b0a8301b1bbfd",
-                "GOOGLE_SECRET": "tu_google_secret"
+                "GOOGLE_SECRET": "tu_google_secret",
+                "SENDGRID_API_KEY": "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",
+                "SENDGRID_EMAIL": "pasalapagina.co@gmail.com"
             }
         }
     ]
