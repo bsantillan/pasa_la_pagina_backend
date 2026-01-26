@@ -71,7 +71,7 @@ public class AuthService {
         if (!usuario.getEmail_verificado()) {
             throw new EmailNoVerificadoException();
         }
-        
+
         refreshTokenRepository.deleteByUsuario(usuario);
 
         LoginResponse response = new LoginResponse();
@@ -124,5 +124,4 @@ public class AuthService {
         Usuario usuario = jwtUtil.getUsuarioFromToken(refreshToken);
         jwtUtil.deleteRefreshToken(usuario);
     }
-
 }

@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.pasa_la_pagina.DTOs.requests.GoogleLoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
+import com.example.pasa_la_pagina.DTOs.requests.VerificarEmailRequest;
 import com.example.pasa_la_pagina.DTOs.response.LoginResponse;
 import com.example.pasa_la_pagina.services.AuthService;
+import com.example.pasa_la_pagina.services.PasswordResetService;
+import com.example.pasa_la_pagina.services.VerificationService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthService authService;
+    private final VerificationService verificationService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
@@ -33,6 +38,19 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/verificar")
+    public ResponseEntity<Void> verificarEmail(@Valid @RequestBody VerificarEmailRequest request) {
+        verificationService.verificarEmail(request.getEmail(), request.getCodigo());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        verificationService.reenviarVerificacion(email);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/google")
@@ -53,6 +71,22 @@ public class AuthController {
         }
         authService.logout(refreshToken);
         return ResponseEntity.ok(Map.of("message", "Sesión cerrada correctamente"));
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> body) {
+        passwordResetService.enviarResetPassword(body.get("email"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<?> confirmPasswordReset(@RequestBody Map<String, String> body) {
+        passwordResetService.resetPassword(
+                body.get("email"),
+                body.get("codigo"),
+                body.get("nuevaPassword")
+        );
+        return ResponseEntity.ok().build();
     }
 
 }

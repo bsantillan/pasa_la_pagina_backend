@@ -3,8 +3,8 @@ package com.example.pasa_la_pagina.services;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.VerificationToken;
@@ -22,6 +22,7 @@ public class VerificationService {
     private final VerificationTokenRepository tokenRepository;
     private final SenGridService emailService;
 
+    @Transactional
     public void enviarTokenVerificacion(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -43,6 +44,7 @@ public class VerificationService {
                 "Tu código de verificación es: " + token.getToken());
     }
 
+    @Transactional
     public void verificarEmail(String email, String codigo) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -66,6 +68,7 @@ public class VerificationService {
         tokenRepository.delete(token);
     }
 
+    @Transactional
     public void reenviarVerificacion(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -77,48 +80,5 @@ public class VerificationService {
         tokenRepository.deleteByUsuarioAndType(usuario, TokenType.VERIFY_EMAIL);
 
         enviarTokenVerificacion(email);
-    }
-
-    public void enviarResetPassword(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        tokenRepository.deleteByUsuarioAndType(usuario, TokenType.RESET_PASSWORD);
-
-        VerificationToken token = VerificationToken.builder()
-                .usuario(usuario)
-                .token(VerificationToken.generarCodigo())
-                .type(TokenType.RESET_PASSWORD)
-                .fechaExpiracion(Instant.now().plus(15, ChronoUnit.MINUTES))
-                .build();
-
-        tokenRepository.save(token);
-
-        emailService.sendEmail(
-                usuario.getEmail(),
-                "Recuperar contraseña para Pasá la Página",
-                "Tu código para restablecer la contraseña es: " + token.getToken());
-    }
-
-    public void resetPassword(String email, String codigo, String nuevaPassword, PasswordEncoder passwordEncoder) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        VerificationToken token = tokenRepository
-                .findByUsuarioAndType(usuario, TokenType.RESET_PASSWORD)
-                .orElseThrow(() -> new RuntimeException("Código inválido"));
-
-        if (token.esExpirado()) {
-            throw new RuntimeException("Token expirado");
-        }
-
-        if (!token.esValido(codigo)) {
-            throw new RuntimeException("Código inválido o expirado");
-        }
-
-        usuario.setPassword_hash(passwordEncoder.encode(nuevaPassword));
-        usuarioRepository.save(usuario);
-
-        tokenRepository.delete(token);
     }
 }
