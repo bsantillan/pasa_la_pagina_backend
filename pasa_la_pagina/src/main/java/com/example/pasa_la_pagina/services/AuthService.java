@@ -11,10 +11,12 @@ import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
 import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
 import com.example.pasa_la_pagina.exceptions.EmailNoVerificadoException;
+import com.example.pasa_la_pagina.exceptions.PasswordInvalidaException;
 import com.example.pasa_la_pagina.repositories.RefreshTokenRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.utils.GoogleTokenVerifier;
 import com.example.pasa_la_pagina.utils.JWTUtil;
+import com.example.pasa_la_pagina.utils.PasswordValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,14 +40,12 @@ public class AuthService {
     public void register(RegisterRequest reg_rq) {
         Usuario usuario = usuarioRepository.findByEmail(reg_rq.getEmail()).orElse(null);
 
-        if (usuario != null) {
+        if (usuario != null && usuario.getEmail_verificado()) {
+            throw new EmailEnUsoException();
+        }
 
-            if (!usuario.getEmail_verificado()) {
-                verificationService.enviarTokenVerificacion(usuario.getEmail());
-                return;
-            }
-
-            throw new EmailEnUsoException("El email ya está registrado");
+        if (!PasswordValidator.esValida(reg_rq.getPassword())) {
+            throw new PasswordInvalidaException();
         }
 
         Usuario usuario_nuevo = Usuario.builder()
