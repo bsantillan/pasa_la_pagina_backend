@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.VerificationToken;
 import com.example.pasa_la_pagina.entities.Enum.TokenType;
+import com.example.pasa_la_pagina.exceptions.CodigoInvalidoException;
+import com.example.pasa_la_pagina.exceptions.CuentaVerificadaException;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.repositories.VerificationTokenRepository;
 
@@ -49,16 +51,20 @@ public class VerificationService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        if (usuario.getEmail_verificado()) {
+            throw new CuentaVerificadaException();
+        }
+
         VerificationToken token = tokenRepository
                 .findByUsuarioAndType(usuario, TokenType.VERIFY_EMAIL)
-                .orElseThrow(() -> new RuntimeException("Código no encontrado"));
+                .orElseThrow(() -> new CodigoInvalidoException("Código invalido"));
 
         if (token.esExpirado()) {
-            throw new RuntimeException("Token expirado");
+            throw new CodigoInvalidoException("Codigo inválido");
         }
 
         if (!token.esValido(codigo)) {
-            throw new RuntimeException("Código inválido");
+            throw new CodigoInvalidoException("Código inválido");
         }
 
         usuario.setEmail_verificado(true);
@@ -74,7 +80,7 @@ public class VerificationService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (usuario.getEmail_verificado()) {
-            throw new RuntimeException("Cuenta ya verificada");
+            throw new CuentaVerificadaException();
         }
 
         tokenRepository.deleteByUsuarioAndType(usuario, TokenType.VERIFY_EMAIL);

@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.example.pasa_la_pagina.exceptions.ChatDeshabilitadoException;
+import com.example.pasa_la_pagina.exceptions.CodigoInvalidoException;
 import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
+import com.example.pasa_la_pagina.exceptions.CuentaVerificadaException;
 import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
+import com.example.pasa_la_pagina.exceptions.EmailNoVerificadoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioInvalidoException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAceptableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoAutorizadoException;
@@ -22,6 +25,8 @@ import com.example.pasa_la_pagina.exceptions.PasswordInvalidaException;
 import com.example.pasa_la_pagina.exceptions.PublicacionNoEncontradaException;
 import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -30,7 +35,6 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(EmailEnUsoException.class)
         public ResponseEntity<Map<String, Object>> handleEmailEnUso(EmailEnUsoException ex) {
                 Map<String, Object> body = new HashMap<>();
-                body.put("status", HttpStatus.CONFLICT.value());
                 body.put("timestamp", Instant.now().toString());
                 body.put("errors", Map.of(
                                 "email", ex.getMessage()));
@@ -40,20 +44,58 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(PasswordInvalidaException.class)
         public ResponseEntity<Map<String, Object>> handlePasswordInvalida(PasswordInvalidaException ex) {
                 Map<String, Object> body = new HashMap<>();
-                body.put("status", HttpStatus.BAD_REQUEST.value());
                 body.put("timestamp", Instant.now().toString());
                 body.put("errors", Map.of(
                                 "password", ex.getMessage()));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
         }
 
+        // Handlers de Login
+
         @ExceptionHandler(CredencialesInvalidasException.class)
-        public ResponseEntity<Map<String, String>> handleCredencialesInvalidas(CredencialesInvalidasException ex) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body(Map.of(
-                                                "timestamp", Instant.now().toString(),
-                                                "status", String.valueOf(HttpStatus.UNAUTHORIZED.value()),
-                                                "error", ex.getMessage()));
+        public ResponseEntity<Map<String, Object>> handleCredencialesInvalidas(CredencialesInvalidasException ex) {
+                Map<String, Object> body = new HashMap<>();
+                body.put("timestamp", Instant.now().toString());
+                body.put("error", ex.getMessage());
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+        }
+
+        @ExceptionHandler(CodigoInvalidoException.class)
+        public ResponseEntity<Map<String, Object>> handleCodigoInvalido(CodigoInvalidoException ex) {
+                Map<String, Object> body = new HashMap<>();
+                body.put("timestamp", Instant.now().toString());
+                body.put("errors", Map.of(
+                                "codigo", ex.getMessage()));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        }
+
+        @ExceptionHandler(CuentaVerificadaException.class)
+        public ResponseEntity<Map<String, Object>> handleCuentaVerificada(CuentaVerificadaException ex) {
+                Map<String, Object> body = new HashMap<>();
+                body.put("timestamp", Instant.now().toString());
+                body.put("errors", Map.of(
+                                "cuenta_verificada", ex.getMessage()));
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        }
+
+        // Handlers de Registro/Login
+        @ExceptionHandler(EmailNoVerificadoException.class)
+        public ResponseEntity<Map<String, Object>> handleEmailNoVerificado(
+                        EmailNoVerificadoException ex,
+                        HttpServletRequest request) {
+                Map<String, Object> body = new HashMap<>();
+                body.put("timestamp", Instant.now().toString());
+
+                if (request.getRequestURI().contains("/auth/register")) {
+                        body.put("errors", Map.of(
+                                        "email", ex.getMessage()));
+                        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+                }
+
+                body.put("errors", Map.of(
+                                "email_verificado", ex.getMessage()));
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
         }
 
         // Handlers de Busqueda

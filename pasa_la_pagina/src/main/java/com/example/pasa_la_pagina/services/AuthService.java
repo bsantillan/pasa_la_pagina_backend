@@ -40,8 +40,12 @@ public class AuthService {
     public void register(RegisterRequest reg_rq) {
         Usuario usuario = usuarioRepository.findByEmail(reg_rq.getEmail()).orElse(null);
 
-        if (usuario != null && usuario.getEmail_verificado()) {
-            throw new EmailEnUsoException();
+        if (usuario != null) {
+            if (usuario.getEmail_verificado()) {
+                throw new EmailEnUsoException();
+            } else {
+                throw new EmailNoVerificadoException("Este email ya está registrado");
+            }
         }
 
         if (!PasswordValidator.esValida(reg_rq.getPassword())) {
@@ -69,7 +73,7 @@ public class AuthService {
         }
 
         if (!usuario.getEmail_verificado()) {
-            throw new EmailNoVerificadoException();
+            throw new EmailNoVerificadoException("Tenés que verificar tu email");
         }
 
         refreshTokenRepository.deleteByUsuario(usuario);
