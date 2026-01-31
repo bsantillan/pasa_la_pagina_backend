@@ -2,6 +2,7 @@ package com.example.pasa_la_pagina.services;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,10 +41,9 @@ public class VerificationService {
 
         tokenRepository.save(token);
 
-        emailService.sendEmail(
+        emailService.sendVerificationEmail(
                 usuario.getEmail(),
-                "Código de verificación de Pasá la Página",
-                "Tu código de verificación es: " + token.getToken());
+                Map.of("email", usuario.getEmail(), "codigo", token.getToken()));
     }
 
     @Transactional
