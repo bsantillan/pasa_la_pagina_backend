@@ -43,7 +43,7 @@ public class VerificationService {
 
         emailService.sendVerificationEmail(
                 usuario.getEmail(),
-                Map.of("email", usuario.getEmail(), "codigo", token.getToken()));
+                Map.of("nombre", usuario.getNombre(), "codigo", token.getToken()));
     }
 
     @Transactional
