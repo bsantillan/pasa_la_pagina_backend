@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.services;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +14,7 @@ import com.example.pasa_la_pagina.exceptions.CredencialesInvalidasException;
 import com.example.pasa_la_pagina.exceptions.EmailEnUsoException;
 import com.example.pasa_la_pagina.exceptions.EmailNoVerificadoException;
 import com.example.pasa_la_pagina.exceptions.PasswordInvalidaException;
+import com.example.pasa_la_pagina.exceptions.TerminosNoAceptadosException;
 import com.example.pasa_la_pagina.repositories.RefreshTokenRepository;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.utils.GoogleTokenVerifier;
@@ -52,12 +55,18 @@ public class AuthService {
             throw new PasswordInvalidaException();
         }
 
+        if (!Boolean.TRUE.equals(reg_rq.getTermsAccepted())) {
+            throw new TerminosNoAceptadosException();
+        }
+
         Usuario usuario_nuevo = Usuario.builder()
                 .email(reg_rq.getEmail())
                 .nombre(capitalizar(reg_rq.getNombre()))
                 .apellido(capitalizar(reg_rq.getApellido()))
                 .password_hash(passwordEncoder.encode(reg_rq.getPassword()))
                 .provider("local")
+                .termsAccepted(true)
+                .termsAcceptedAt(LocalDateTime.now())
                 .build();
         usuarioRepository.save(usuario_nuevo);
 

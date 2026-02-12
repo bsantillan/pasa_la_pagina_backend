@@ -1,5 +1,7 @@
 package com.example.pasa_la_pagina.entities;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,4 +39,11 @@ public class Usuario {
 
     @Column(nullable = false, length = 10)
     private String provider;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean termsAccepted = false;
+
+    @Column(name = "terms_accepted_at", nullable = false)
+    private LocalDateTime termsAcceptedAt;
 }

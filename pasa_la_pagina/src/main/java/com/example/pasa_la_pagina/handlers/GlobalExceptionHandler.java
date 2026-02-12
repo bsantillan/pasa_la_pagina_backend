@@ -23,6 +23,7 @@ import com.example.pasa_la_pagina.exceptions.IntercambioNoCancelableException;
 import com.example.pasa_la_pagina.exceptions.IntercambioNoEncontradoException;
 import com.example.pasa_la_pagina.exceptions.PasswordInvalidaException;
 import com.example.pasa_la_pagina.exceptions.PublicacionNoEncontradaException;
+import com.example.pasa_la_pagina.exceptions.TerminosNoAceptadosException;
 import com.example.pasa_la_pagina.exceptions.UsuarioNoEncontradoException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +48,15 @@ public class GlobalExceptionHandler {
                 body.put("timestamp", Instant.now().toString());
                 body.put("errors", Map.of(
                                 "password", ex.getMessage()));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        }
+
+        @ExceptionHandler(TerminosNoAceptadosException.class)
+        public ResponseEntity<Map<String, Object>> handleTerminosNoAceptados(TerminosNoAceptadosException ex) {
+                Map<String, Object> body = new HashMap<>();
+                body.put("timestamp", Instant.now().toString());
+                body.put("errors", Map.of(
+                                "terminos", ex.getMessage()));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
         }
 
