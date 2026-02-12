@@ -3,6 +3,7 @@ package com.example.pasa_la_pagina.services;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,6 @@ import com.example.pasa_la_pagina.entities.Usuario;
 import com.example.pasa_la_pagina.entities.VerificationToken;
 import com.example.pasa_la_pagina.entities.Enum.TokenType;
 import com.example.pasa_la_pagina.exceptions.CodigoInvalidoException;
-import com.example.pasa_la_pagina.exceptions.CuentaVerificadaException;
 import com.example.pasa_la_pagina.exceptions.PasswordInvalidaException;
 import com.example.pasa_la_pagina.repositories.UsuarioRepository;
 import com.example.pasa_la_pagina.repositories.VerificationTokenRepository;
@@ -52,8 +52,13 @@ public class PasswordResetService {
 
         @Transactional
         public void verificarEmail(String email, String codigo) {
-                Usuario usuario = usuarioRepository.findByEmail(email)
-                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+                if (usuarioOpt.isEmpty()) {
+                        return;
+                }
+
+                Usuario usuario = usuarioOpt.get();
 
                 VerificationToken token = tokenRepository
                                 .findByUsuarioAndType(usuario, TokenType.RESET_PASSWORD)
@@ -72,8 +77,13 @@ public class PasswordResetService {
 
         @Transactional
         public void reenviarVerificacion(String email) {
-                Usuario usuario = usuarioRepository.findByEmail(email)
-                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+                if (usuarioOpt.isEmpty()) {
+                        return;
+                }
+
+                Usuario usuario = usuarioOpt.get();
 
                 tokenRepository.deleteByUsuarioAndType(usuario, TokenType.RESET_PASSWORD);
 

@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.pasa_la_pagina.DTOs.requests.GoogleLoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.LoginRequest;
 import com.example.pasa_la_pagina.DTOs.requests.RegisterRequest;
+import com.example.pasa_la_pagina.DTOs.requests.ResendCodigoRequest;
+import com.example.pasa_la_pagina.DTOs.requests.ResetCodigoRequest;
+import com.example.pasa_la_pagina.DTOs.requests.ResetPasswordRequest;
 import com.example.pasa_la_pagina.DTOs.requests.VerificarEmailRequest;
 import com.example.pasa_la_pagina.DTOs.response.LoginResponse;
 import com.example.pasa_la_pagina.entities.Enum.TokenType;
@@ -53,13 +56,11 @@ public class AuthController {
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<?> resendVerification(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String tipo_codigo = body.get("tipo_codigo");
-        if (TokenType.valueOf(tipo_codigo) == TokenType.VERIFY_EMAIL) {
-            verificationService.reenviarVerificacion(email);
+    public ResponseEntity<?> resendVerification(@Valid @RequestBody ResendCodigoRequest request) {
+        if (request.getTipo_codigo() == TokenType.VERIFY_EMAIL) {
+            verificationService.reenviarVerificacion(request.getEmail());
         } else {
-            passwordResetService.reenviarVerificacion(email);
+            passwordResetService.reenviarVerificacion(request.getEmail());
         }
         return ResponseEntity.ok().build();
     }
@@ -85,16 +86,16 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/request")
-    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> body) {
-        passwordResetService.enviarResetPassword(body.get("email"));
+    public ResponseEntity<?> requestPasswordReset(@Valid @RequestBody ResetCodigoRequest request) {
+        passwordResetService.enviarResetPassword(request.getEmail());
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/password-reset/confirm")
-    public ResponseEntity<?> confirmPasswordReset(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> confirmPasswordReset(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(
-                body.get("email"),
-                body.get("nuevaPassword"));
+                request.getEmail(),
+                request.getNuevaPassword());
         return ResponseEntity.ok().build();
     }
 }
